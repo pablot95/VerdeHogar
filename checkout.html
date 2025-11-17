@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalizar Compra - HogarVerde</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Mercado Pago SDK -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+</head>
+<body>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, doc, updateDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyB8RmLCZkzPDNTy5R9FjPEwIt0KBv3emxA",
+          authDomain: "hogarverde-489e9.firebaseapp.com",
+          projectId: "hogarverde-489e9",
+          storageBucket: "hogarverde-489e9.firebasestorage.app",
+          messagingSenderId: "624499647908",
+          appId: "1:624499647908:web:88d9699f38c60bd7080d31"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.firebaseDB = db;
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseServerTimestamp = serverTimestamp;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseIncrement = increment;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+        window.firebaseApp = app;
+    </script>
+    
+    <script type="module">
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
+        const functions = getFunctions(window.firebaseApp);
+        window.firebaseFunctions = functions;
+        window.firebaseHttpsCallable = httpsCallable;
+    </script>
+
+
+    <!-- Checkout Page Content -->
+    <div class="checkout-page-wrapper">
+        <div class="checkout-container">
+            <button class="back-btn" onclick="window.location.href='index.html'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Volver a la tienda
+            </button>
+            
+            <h1>Finalizar Compra</h1>
+            
+            <div class="checkout-grid">
+                <div class="checkout-form">
+                    <h2>Información de Envío</h2>
+                    <form id="checkoutForm">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="fullName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="tel" id="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Dirección</label>
+                            <input type="text" id="address" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Ciudad</label>
+                                <input type="text" id="city" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Código Postal</label>
+                                <input type="text" id="zipCode" required>
+                            </div>
+                        </div>
+                        
+                        <h2>Método de Pago</h2>
+                        <div class="payment-info">
+                            <p>Serás redirigido a Mercado Pago para completar tu pago de forma segura.</p>
+                            <p class="payment-methods-available">Métodos disponibles: tarjetas de crédito/débito, efectivo, transferencias.</p>
+                        </div>
+                        
+                        <button type="submit" class="submit-order-btn">Continuar al Pago</button>
+                    </form>
+                </div>
+                
+                <div class="order-summary">
+                    <h2>Resumen del Pedido</h2>
+                    <div class="summary-items" id="summaryItems">
+                        <!-- Order items will be loaded here -->
+                    </div>
+                    <div class="summary-totals">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span id="summarySubtotal">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Envío:</span>
+                            <span id="summaryShipping">$5.000</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span id="summaryTotal">$0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="cart-modal" id="cartModal">
+        <div class="cart-modal-content">
+            <div class="cart-header">
+                <h2>Tu Carrito</h2>
+                <button class="close-cart" id="closeCart">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items will be loaded here -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Total:</span>
+                    <span id="cartTotal">$0</span>
+                </div>
+                <button class="checkout-btn" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Inicializar Mercado Pago con Public Key del cliente
+        const mp = new MercadoPago('APP_USR-6c98f692-1f6f-461a-8f87-e41588f81cf7', {
+            locale: 'es-AR'
+        });
+        
+        // Initialize checkout page on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadProductsFromFirebase();
+            updateCartCount();
+            initializeCart();
+            
+            // Check if cart is empty
+            if (cart.length === 0) {
+                alert('Tu carrito está vacío');
+                window.location.href = 'productos.html';
+                return;
+            }
+            
+            renderCheckoutSummary();
+            
+            // Handle form submission
+            const checkoutForm = document.getElementById('checkoutForm');
+            const submitBtn = checkoutForm.querySelector('.submit-order-btn');
+            
+            checkoutForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Deshabilitar botón para evitar múltiples clicks
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Procesando...';
+                
+                try {
+                    // Crear ID único para la orden
+                    const orderId = `ORDER-${Date.now()}`;
+                    
+                    // Preparar datos de la orden
+                    const orderData = {
+                        orderId: orderId,
+                        items: cart.map(item => ({
+                            firebaseId: item.firebaseId,
+                            name: item.name,
+                            description: item.description || '',
+                            price: item.price,
+                            quantity: item.quantity,
+                            image: item.image || '',
+                            category: item.category || 'general'
+                        })),
+                        payer: {
+                            name: document.getElementById('fullName').value,
+                            email: document.getElementById('email').value,
+                            phone: document.getElementById('phone').value,
+                            address: document.getElementById('address').value,
+                            city: document.getElementById('city').value,
+                            zipCode: document.getElementById('zipCode').value
+                        },
+                        baseUrl: window.location.origin,
+                        status: 'pending',
+                        paymentStatus: 'pending',
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    // Guardar orden en Firebase
+                    await window.firebaseAddDoc(
+                        window.firebaseCollection(window.firebaseDB, 'orders'),
+                        orderData
+                    );
+                    
+                    console.log('Order created in Firebase:', orderId);
+                    
+                    // Llamar a Firebase Function para crear preferencia de pago
+                    const createPayment = window.firebaseHttpsCallable(
+                        window.firebaseFunctions, 
+                        'createPaymentPreference'
+                    );
+                    
+                    const result = await createPayment(orderData);
+                    
+                    console.log('Payment preference created:', result.data);
+                    
+                    // Limpiar carrito
+                    localStorage.removeItem('cart');
+                    
+                    // Redirigir a Mercado Pago
+                    // En modo de prueba, usa sandboxInitPoint
+                    window.location.href = result.data.sandboxInitPoint || result.data.initPoint;
+                    
+                } catch (error) {
+                    console.error('Error al procesar el pago:', error);
+                    alert('Error al procesar el pago. Por favor intenta nuevamente.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Continuar al Pago';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

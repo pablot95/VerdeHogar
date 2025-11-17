@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HogarVerde - Elegancia para tu hogar</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+</head>
+<body>
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, doc, updateDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyB8RmLCZkzPDNTy5R9FjPEwIt0KBv3emxA",
+          authDomain: "hogarverde-489e9.firebaseapp.com",
+          projectId: "hogarverde-489e9",
+          storageBucket: "hogarverde-489e9.firebasestorage.app",
+          messagingSenderId: "624499647908",
+          appId: "1:624499647908:web:88d9699f38c60bd7080d31"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Make available globally
+        window.firebaseDB = db;
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseServerTimestamp = serverTimestamp;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseIncrement = increment;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+    </script>
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 5L5 15V30L20 40L35 30V15L20 5Z" stroke="#2D5016" stroke-width="2" fill="none"/>
+                    <path d="M20 12L12 17V27L20 32L28 27V17L20 12Z" fill="#4A7C2C"/>
+                    <circle cx="20" cy="22" r="3" fill="#8BC34A"/>
+                </svg>
+                <span class="logo-text">VerdeHogar</span>
+            </div>
+            
+            <div class="search-bar">
+                <input type="text" placeholder="Buscar productos..." id="searchInput">
+                <button class="search-btn">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="cart-icon" id="cartIcon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 2L7.17 4H3a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-4.17L15 2H9z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M9 11h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="cart-count" id="cartCount">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section with Video -->
+    <section class="hero-section">
+        <div class="video-container">
+            <video autoplay muted loop playsinline class="hero-video">
+                <source src="videos/hogar.mp4" type="video/mp4">
+            </video>
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h1 class="hero-title">Transforma tu espacio</h1>
+                <p class="hero-subtitle">Descubre el arte de vivir con estilo</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Category Navigation -->
+    <section class="category-navigation">
+        <div class="category-nav-container">
+            <button class="category-nav-btn" onclick="goToProducts('all')">
+                <span class="category-nav-text">Ver todo</span>
+            </button>
+            <button class="category-nav-btn" onclick="goToProducts('living')">
+                <span class="category-nav-text">Living</span>
+            </button>
+            <button class="category-nav-btn" onclick="goToProducts('dormitorio')">
+                <span class="category-nav-text">Dormitorio</span>
+            </button>
+            <button class="category-nav-btn" onclick="goToProducts('cocina')">
+                <span class="category-nav-text">Cocina</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Featured Products Section -->
+    <section class="featured-products-section">
+        <div class="featured-container">
+            <h2 class="section-title">Productos Seleccionados</h2>
+            <div class="featured-products-grid" id="featuredProductsGrid">
+                <!-- Featured products will be loaded here -->
+            </div>
+            <button class="view-all-btn" onclick="goToProducts('all')">Ver Todos los Productos</button>
+        </div>
+    </section>
+
+    <!-- Categories Grid -->
+    <section class="categories-grid-section">
+        <div class="categories-container">
+            <!-- Row 1: Living & Dormitorio -->
+
+                <!-- Living -->
+                <div class="category-box">
+                    <h3 class="category-title">Living</h3>
+                    <img src="images/living-room.jpg" alt="Living">
+                    <div class="category-overlay">
+                        <h2>Living</h2>
+                        <p>Espacios diseñados para la vida moderna. Muebles que combinan estética contemporánea con comodidad suprema.</p>
+                        <button class="category-btn" onclick="goToProducts('living')">Explorar</button>
+                    </div>
+                </div>
+                
+                <!-- Dormitorio -->
+                <div class="category-box reverse">
+                    <h3 class="category-title">Dormitorio</h3>
+                    <img src="images/dormitorio.jpg" alt="Dormitorio">
+                    <div class="category-overlay">
+                        <h2>Dormitorio</h2>
+                        <p>Tu santuario personal de descanso y renovación. Piezas que transforman tu habitación en un oasis de tranquilidad.</p>
+                        <button class="category-btn" onclick="goToProducts('dormitorio')">Explorar</button>
+                    </div>
+                </div>
+
+
+            <!-- Row 2: Cocina & Baño -->
+
+                <!-- Cocina -->
+                <div class="category-box">
+                    <h3 class="category-title">Cocina</h3>
+                    <img src="images/cocina.jpg" alt="Cocina">
+                    <div class="category-overlay">
+                        <h2>Cocina</h2>
+                        <p>El corazón del hogar donde la familia se reúne. Diseños innovadores que combinan funcionalidad y estilo.</p>
+                        <button class="category-btn" onclick="goToProducts('cocina')">Explorar</button>
+                    </div>
+                </div>
+                
+
+        </div>
+    </section>
+
+    <!-- Sale Products Section -->
+    <section class="sale-products-section">
+        <div class="sale-container">
+            <h2 class="section-title">Productos en Oferta</h2>
+            <div class="sale-products-grid" id="saleProductsGrid">
+                <!-- Sale products will be loaded here -->
+            </div>
+        <button class="view-all-btn" onclick="goToProducts('all')">Ver Todos los Productos</button> 
+        </div>
+    </section>
+
+    <!-- Lifestyle Sections - Full Screen Backgrounds -->
+    <section class="lifestyle-fullscreen" style="background-image: url('images/estilo-minimalista.jpg');">
+        <div class="lifestyle-fullscreen-overlay"></div>
+        <div class="lifestyle-fullscreen-content">
+            <h2>Minimalismo Elegante</h2>
+            <p>Líneas puras, formas simples. Cada pieza cuenta una historia de sofisticación y funcionalidad. Descubre cómo menos puede ser más en tu espacio.</p>
+            <div class="lifestyle-scroll-indicator">
+                <span>Desliza</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14m0 0l7-7m-7 7l-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <section class="lifestyle-fullscreen" style="background-image: url('images/estilo-natural.jpg');">
+        <div class="lifestyle-fullscreen-overlay"></div>
+        <div class="lifestyle-fullscreen-content">
+            <h2>Naturaleza en Casa</h2>
+            <p>Conecta con lo esencial. Materiales orgánicos que traen la serenidad del exterior a tu interior. Respira, relaja, vive en armonía.</p>
+            <div class="lifestyle-scroll-indicator">
+                <span>Desliza</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14m0 0l7-7m-7 7l-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <section class="lifestyle-fullscreen" style="background-image: url('images/Hogar-chimenea.jpg');">
+        <div class="lifestyle-fullscreen-overlay"></div>
+        <div class="lifestyle-fullscreen-content">
+            <h2>Calidez que Acoge</h2>
+            <p>Crea momentos inolvidables. Ambientes que invitan al encuentro y la conexión. Tu hogar, tu refugio de emociones compartidas.</p>
+            <div class="lifestyle-scroll-indicator">
+                <span>Desliza</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14m0 0l7-7m-7 7l-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+        
+    </section>
+
+    <!-- Products Page -->
+    <div class="products-page" id="productsPage">
+        <div class="products-page-container">
+            <!-- Filtros Laterales -->
+            <aside class="products-filters">
+                <button class="back-btn" id="backToHome">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Volver
+                </button>
+                
+                <div class="filters-header">
+                    <h2>Filtros</h2>
+                </div>
+                
+                <div class="filter-section">
+                    <h3>Categorías</h3>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="radio" name="category" value="all" checked onchange="filterByCategory(this.value)">
+                            <span>Todos los productos</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="category" value="living" onchange="filterByCategory(this.value)">
+                            <span>Living</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="category" value="dormitorio" onchange="filterByCategory(this.value)">
+                            <span>Dormitorio</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="category" value="cocina" onchange="filterByCategory(this.value)">
+                            <span>Cocina</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3>Rango de Precio</h3>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" value="low" onchange="filterByPrice()">
+                            <span>Hasta $30.000</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" value="medium" onchange="filterByPrice()">
+                            <span>$30.000 - $80.000</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" value="high" onchange="filterByPrice()">
+                            <span>Más de $80.000</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button class="clear-filters-btn" onclick="clearFilters()">Limpiar Filtros</button>
+            </aside>
+            
+            <!-- Productos -->
+            <div class="products-main">
+                <div class="products-actions-bar">
+                    <div class="products-count" id="productsCount">0 productos</div>
+                    <button class="checkout-main-btn" id="checkoutMainBtn" onclick="goToCheckoutFromProducts()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 2L7.17 4H3a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-4.17L15 2H9z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Finalizar Compra
+                        <span class="checkout-main-count" id="checkoutMainCount">0</span>
+                    </button>
+                </div>
+                
+                <div class="products-grid" id="allProductsGrid">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <div class="logo">
+                    <svg width="30" height="30" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 5L5 15V30L20 40L35 30V15L20 5Z" stroke="#fff" stroke-width="2" fill="none"/>
+                        <path d="M20 12L12 17V27L20 32L28 27V17L20 12Z" fill="#4A7C2C"/>
+                        <circle cx="20" cy="22" r="3" fill="#8BC34A"/>
+                    </svg>
+                    <span class="logo-text">HogarVerde</span>
+                </div>
+                <p>Elegancia y estilo para tu hogar</p>
+            </div>
+            <div class="footer-section">
+                <h4>Contacto</h4>
+                <p>info@hogarverde.com</p>
+                <p>+54 11 1234-5678</p>
+            </div>
+            <div class="footer-section">
+                <h4>Síguenos</h4>
+                <div class="social-links">
+                    <a href="#">Instagram</a>
+                    <a href="#">Facebook</a>
+                    <a href="#">Pinterest</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 HogarVerde. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Cart Modal -->
+    <div class="cart-modal" id="cartModal">
+        <div class="cart-modal-content">
+            <div class="cart-header">
+                <h2>Carrito de Compras</h2>
+                <button class="close-cart" id="closeCart">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items will be loaded here -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Total:</span>
+                    <span id="cartTotal">$0</span>
+                </div>
+                <button class="checkout-btn" id="checkoutBtn">Finalizar Compra</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Page (Hidden by default) -->
+    <div class="checkout-page" id="checkoutPage">
+        <div class="checkout-container">
+            <button class="back-btn" id="backToShop">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Volver a la tienda
+            </button>
+            
+            <h1>Finalizar Compra</h1>
+            
+            <div class="checkout-grid">
+                <div class="checkout-form">
+                    <h2>Información de Envío</h2>
+                    <form id="checkoutForm">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="fullName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="tel" id="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Dirección</label>
+                            <input type="text" id="address" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Ciudad</label>
+                                <input type="text" id="city" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Código Postal</label>
+                                <input type="text" id="zipCode" required>
+                            </div>
+                        </div>
+                        
+                        <h2>Método de Pago</h2>
+                        <div class="payment-methods">
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="card" checked>
+                                <span>Tarjeta de Crédito/Débito</span>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="transfer">
+                                <span>Transferencia Bancaria</span>
+                            </label>
+                        </div>
+                        
+                        <div id="cardFields" class="card-fields">
+                            <div class="form-group">
+                                <label>Número de Tarjeta</label>
+                                <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Vencimiento</label>
+                                    <input type="text" id="expiry" placeholder="MM/AA">
+                                </div>
+                                <div class="form-group">
+                                    <label>CVV</label>
+                                    <input type="text" id="cvv" placeholder="123">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="submit-order-btn">Confirmar Pedido</button>
+                    </form>
+                </div>
+                
+                <div class="order-summary">
+                    <h2>Resumen del Pedido</h2>
+                    <div class="summary-items" id="summaryItems">
+                        <!-- Order items will be loaded here -->
+                    </div>
+                    <div class="summary-totals">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span id="summarySubtotal">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Envío:</span>
+                            <span id="summaryShipping">$5.000</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span id="summaryTotal">$0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

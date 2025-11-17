@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos - HogarVerde</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, doc, updateDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+        apiKey: "AIzaSyB8RmLCZkzPDNTy5R9FjPEwIt0KBv3emxA",
+        authDomain: "hogarverde-489e9.firebaseapp.com",
+        projectId: "hogarverde-489e9",
+        storageBucket: "hogarverde-489e9.firebasestorage.app",
+        messagingSenderId: "624499647908",
+        appId: "1:624499647908:web:88d9699f38c60bd7080d31"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.firebaseDB = db;
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseServerTimestamp = serverTimestamp;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseIncrement = increment;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+    </script>
+
+    <!-- Products Page Content -->
+    <div class="products-page-wrapper">
+        <div class="products-page-container">
+            <!-- Filtros Laterales -->
+            <aside class="products-filters">
+                <button class="back-btn" onclick="window.location.href='index.html'">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Volver
+                </button>
+                
+                <div class="filters-header">
+                    <h2>Filtros</h2>
+                </div>
+                
+                <div class="filter-section">
+                    <h3>Categorías</h3>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="radio" name="category" value="all" checked onchange="filterByCategory(this.value)">
+                            <span>Todos los productos</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="category" value="living" onchange="filterByCategory(this.value)">
+                            <span>Living</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="category" value="dormitorio" onchange="filterByCategory(this.value)">
+                            <span>Dormitorio</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="category" value="cocina" onchange="filterByCategory(this.value)">
+                            <span>Cocina</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3>Rango de Precio</h3>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" value="low" onchange="filterByPrice()">
+                            <span>Hasta $30.000</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" value="medium" onchange="filterByPrice()">
+                            <span>$30.000 - $80.000</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" value="high" onchange="filterByPrice()">
+                            <span>Más de $80.000</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button class="clear-filters-btn" onclick="clearFilters()">Limpiar Filtros</button>
+            </aside>
+            
+            <!-- Productos -->
+            <div class="products-main">
+                <div class="products-actions-bar">
+                    <div class="products-count" id="productsCount">0 productos</div>
+                    <button class="checkout-main-btn" id="checkoutMainBtn" onclick="window.location.href='checkout.html'">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 2L7.17 4H3a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-4.17L15 2H9z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Finalizar Compra
+                        <span class="checkout-main-count" id="checkoutMainCount">0</span>
+                    </button>
+                </div>
+                
+                <div class="products-grid" id="allProductsGrid">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="cart-modal" id="cartModal">
+        <div class="cart-modal-content">
+            <div class="cart-header">
+                <h2>Tu Carrito</h2>
+                <button class="close-cart" id="closeCart">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items will be loaded here -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Total:</span>
+                    <span id="cartTotal">$0</span>
+                </div>
+                <button class="checkout-btn" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize products page on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadProductsFromFirebase();
+            
+            // Get category from URL if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const category = urlParams.get('category') || 'all';
+            
+            // Set category filter
+            const categoryRadio = document.querySelector(`input[name="category"][value="${category}"]`);
+            if (categoryRadio) {
+                categoryRadio.checked = true;
+            }
+            
+            // Load products
+            loadProductsByCategory(category);
+            updateProductsCount();
+            updateCheckoutMainButton();
+            updateCartCount();
+            initializeCart();
+        });
+    </script>
+</body>
+</html>
