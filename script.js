@@ -193,6 +193,9 @@ function loadFeaturedProducts() {
     const featuredGrid = document.getElementById('featuredProductsGrid');
     if (!featuredGrid) return;
     
+    // Clear existing products to avoid duplicates
+    featuredGrid.innerHTML = '';
+    
     // Select 8 featured products (2 rows of 4)
     const featuredProducts = [
         productsData.living[0],     // Sofá Elegance
@@ -215,11 +218,14 @@ function loadSaleProducts() {
     const saleGrid = document.getElementById('saleProductsGrid');
     if (!saleGrid) return;
     
+    // Clear existing products to avoid duplicates
+    saleGrid.innerHTML = '';
+    
     // Select 4 products for sale
     const saleProducts = [
-        productsData.living[2],     // Estante Modular
-        productsData.dormitorio[1], // Dormitorio Completo
-        productsData.cocina[1],     // Mesa Comedor
+        productsData.living[0],     // Estante Modular
+        productsData.dormitorio[0], // Dormitorio Completo
+        productsData.cocina[0],     // Mesa Comedor
         productsData.dormitorio[1]        // Espejo con Luz LED
     ];
     

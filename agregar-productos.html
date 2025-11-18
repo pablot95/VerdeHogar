@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Productos a Firebase - HogarVerde</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-weight: 600;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        .product-list {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .product-item {
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .product-item:last-child {
+            border-bottom: none;
+        }
+        .info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛋️ Agregar Productos a Firebase</h1>
+        <p class="subtitle">Este script agregará productos de ejemplo a tu tienda HogarVerde</p>
+        
+        <div class="info">
+            <strong>ℹ️ Información:</strong><br>
+            Este script agregará 12 productos de ejemplo en 3 categorías (living, dormitorio, cocina).
+            Solo necesitas hacer clic en el botón una vez.
+        </div>
+        
+        <button id="addProductsBtn" onclick="addProducts()">
+            Agregar Productos a Firebase
+        </button>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="productList" class="product-list" style="display: none;">
+            <h3>Productos que se agregarán:</h3>
+            <div id="products"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8RmLCZkzPDNTy5R9FjPEwIt0KBv3emxA",
+            authDomain: "hogarverde-489e9.firebaseapp.com",
+            projectId: "hogarverde-489e9",
+            storageBucket: "hogarverde-489e9.firebasestorage.app",
+            messagingSenderId: "624499647908",
+            appId: "1:624499647908:web:88d9699f38c60bd7080d31"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.firebaseDB = db;
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+
+        console.log('Firebase inicializado correctamente');
+    </script>
+
+    <script>
+        const products = [
+            // Living (4 productos)
+            {
+                name: 'Sofá Elegance',
+                description: 'Sofá moderno de tres plazas, tapizado en tela premium con estructura de madera maciza',
+                price: 89990,
+                image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800',
+                category: 'living',
+                stock: 15
+            },
+            {
+                name: 'Mesa Ratona Nordic',
+                description: 'Mesa de centro con diseño escandinavo, madera natural y acabado mate',
+                price: 34990,
+                image: 'https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=800',
+                category: 'living',
+                stock: 25
+            },
+            {
+                name: 'Estante Modular',
+                description: 'Biblioteca moderna con compartimentos ajustables, madera enchapada',
+                price: 45990,
+                image: 'https://images.unsplash.com/photo-1594026112284-02bb6f3352fe?w=800',
+                category: 'living',
+                stock: 12
+            },
+            {
+                name: 'Sillón Relax',
+                description: 'Sillón individual reclinable, tapizado en cuero sintético de alta calidad',
+                price: 52990,
+                image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800',
+                category: 'living',
+                stock: 8
+            },
+
+            // Dormitorio (4 productos)
+            {
+                name: 'Cama King Deluxe',
+                description: 'Cama matrimonial king size con cabecera acolchada y estructura reforzada',
+                price: 125990,
+                image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800',
+                category: 'dormitorio',
+                stock: 6
+            },
+            {
+                name: 'Vanitory Moderno',
+                description: 'Cómoda con espejo y 6 cajones, terminación laqueada blanca',
+                price: 67990,
+                image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800',
+                category: 'dormitorio',
+                stock: 10
+            },
+            {
+                name: 'Placard 4 Puertas',
+                description: 'Amplio guardarropa con espejos, divisiones internas y cajonera',
+                price: 98990,
+                image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800',
+                category: 'dormitorio',
+                stock: 5
+            },
+            {
+                name: 'Mesa de Luz Minimalista',
+                description: 'Mesa auxiliar con cajón y estante, diseño minimalista contemporáneo',
+                price: 18990,
+                image: 'https://images.unsplash.com/photo-1567016432779-094069958ea5?w=800',
+                category: 'dormitorio',
+                stock: 20
+            },
+
+            // Cocina (4 productos)
+            {
+                name: 'Cocina Integral Premium',
+                description: 'Mueble de cocina completo con mesada de granito y grifería incluida',
+                price: 156990,
+                image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800',
+                category: 'cocina',
+                stock: 4
+            },
+            {
+                name: 'Mesa Comedor Extensible',
+                description: 'Mesa de madera maciza extensible para 6-8 personas',
+                price: 78990,
+                image: 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800',
+                category: 'cocina',
+                stock: 8
+            },
+            {
+                name: 'Sillas Comedor Set x4',
+                description: 'Juego de 4 sillas tapizadas con estructura de madera',
+                price: 45990,
+                image: 'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=800',
+                category: 'cocina',
+                stock: 15
+            },
+            {
+                name: 'Alacena Mural',
+                description: 'Mueble de pared con puertas de vidrio y estantes regulables',
+                price: 34990,
+                image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800',
+                category: 'cocina',
+                stock: 12
+            }
+        ];
+
+        // Mostrar lista de productos
+        function showProductsList() {
+            const productList = document.getElementById('productList');
+            const productsDiv = document.getElementById('products');
+            
+            productsDiv.innerHTML = products.map(p => 
+                `<div class="product-item">
+                    <strong>${p.name}</strong> - ${p.category} - $${p.price.toLocaleString()}
+                </div>`
+            ).join('');
+            
+            productList.style.display = 'block';
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        async function addProducts() {
+            const btn = document.getElementById('addProductsBtn');
+            btn.disabled = true;
+            
+            showStatus('⏳ Verificando productos existentes...', 'loading');
+            
+            try {
+                // Verificar si ya hay productos
+                const querySnapshot = await window.firebaseGetDocs(
+                    window.firebaseCollection(window.firebaseDB, 'products')
+                );
+                
+                if (querySnapshot.size > 0) {
+                    showStatus(`⚠️ Ya hay ${querySnapshot.size} productos en Firebase. Si quieres agregar más, elimina los existentes primero desde la consola de Firebase.`, 'error');
+                    btn.disabled = false;
+                    return;
+                }
+                
+                showStatus('📦 Agregando productos a Firebase...', 'loading');
+                
+                let added = 0;
+                for (const product of products) {
+                    await window.firebaseAddDoc(
+                        window.firebaseCollection(window.firebaseDB, 'products'),
+                        product
+                    );
+                    added++;
+                    showStatus(`📦 Agregando productos... ${added}/${products.length}`, 'loading');
+                }
+                
+                showStatus(`✅ ¡Éxito! Se agregaron ${added} productos a Firebase. Ya puedes ver los productos en tu sitio.`, 'success');
+                showProductsList();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus(`❌ Error al agregar productos: ${error.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // Cargar Firebase status al iniciar
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (window.firebaseDB) {
+                    showStatus('✅ Conexión con Firebase establecida. Listo para agregar productos.', 'success');
+                } else {
+                    showStatus('❌ Error: No se pudo conectar con Firebase. Verifica tu configuración.', 'error');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

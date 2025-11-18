@@ -146,11 +146,15 @@
     <script>
         // Initialize products page on load
         document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Productos page: Iniciando carga...');
+            
             await loadProductsFromFirebase();
+            console.log('Productos cargados desde Firebase:', productsData);
             
             // Get category from URL if present
             const urlParams = new URLSearchParams(window.location.search);
             const category = urlParams.get('category') || 'all';
+            console.log('Categoría seleccionada:', category);
             
             // Set category filter
             const categoryRadio = document.querySelector(`input[name="category"][value="${category}"]`);
@@ -164,6 +168,8 @@
             updateCheckoutMainButton();
             updateCartCount();
             initializeCart();
+            
+            console.log('Productos page: Carga completa');
         });
     </script>
 </body>

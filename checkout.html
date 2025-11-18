@@ -94,6 +94,42 @@
                             </div>
                         </div>
                         
+                        <div class="form-group">
+                            <label>Zona de Envío</label>
+                            <select id="shippingZone" required onchange="calculateShipping()">
+                                <option value="">Selecciona tu zona</option>
+                                <option value="capital">Capital Federal - $5.000</option>
+                                <option value="gba">GBA (Gran Buenos Aires) - $7.500</option>
+                                <option value="interior">Interior (Buenos Aires) - $12.000</option>
+                                <option value="nacional">Resto del País - $15.000</option>
+                            </select>
+                        </div>
+                        
+                        <h2>Información de Facturación</h2>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="sameAsShipping" checked onchange="toggleBillingAddress()">
+                                <span>La dirección de facturación es la misma que la de envío</span>
+                            </label>
+                        </div>
+                        
+                        <div id="billingAddressSection" style="display: none;">
+                            <div class="form-group">
+                                <label>Dirección de Facturación</label>
+                                <input type="text" id="billingAddress">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Ciudad</label>
+                                    <input type="text" id="billingCity">
+                                </div>
+                                <div class="form-group">
+                                    <label>Código Postal</label>
+                                    <input type="text" id="billingZipCode">
+                                </div>
+                            </div>
+                        </div>
+                        
                         <h2>Método de Pago</h2>
                         <div class="payment-info">
                             <p>Serás redirigido a Mercado Pago para completar tu pago de forma segura.</p>
@@ -154,6 +190,58 @@
 
     <script src="script.js"></script>
     <script>
+        // Costos de envío por zona
+        const shippingCosts = {
+            capital: 5000,
+            gba: 7500,
+            interior: 12000,
+            nacional: 15000
+        };
+        
+        let currentShippingCost = 5000; // Default
+        
+        // Calcular costo de envío
+        function calculateShipping() {
+            const zone = document.getElementById('shippingZone').value;
+            if (zone && shippingCosts[zone]) {
+                currentShippingCost = shippingCosts[zone];
+            } else {
+                currentShippingCost = 5000; // Default
+            }
+            
+            // Actualizar UI
+            document.getElementById('summaryShipping').textContent = `$${currentShippingCost.toLocaleString()}`;
+            
+            // Recalcular total
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const total = subtotal + currentShippingCost;
+            document.getElementById('summaryTotal').textContent = `$${total.toLocaleString()}`;
+        }
+        
+        // Toggle dirección de facturación
+        function toggleBillingAddress() {
+            const checkbox = document.getElementById('sameAsShipping');
+            const billingSection = document.getElementById('billingAddressSection');
+            
+            if (checkbox.checked) {
+                billingSection.style.display = 'none';
+                // Limpiar campos de facturación
+                document.getElementById('billingAddress').value = '';
+                document.getElementById('billingCity').value = '';
+                document.getElementById('billingZipCode').value = '';
+                // No requeridos
+                document.getElementById('billingAddress').required = false;
+                document.getElementById('billingCity').required = false;
+                document.getElementById('billingZipCode').required = false;
+            } else {
+                billingSection.style.display = 'block';
+                // Campos requeridos
+                document.getElementById('billingAddress').required = true;
+                document.getElementById('billingCity').required = true;
+                document.getElementById('billingZipCode').required = true;
+            }
+        }
+        
         // Inicializar Mercado Pago con Public Key del cliente
         const mp = new MercadoPago('APP_USR-6c98f692-1f6f-461a-8f87-e41588f81cf7', {
             locale: 'es-AR'
@@ -174,6 +262,9 @@
             
             renderCheckoutSummary();
             
+            // Calcular envío inicial
+            calculateShipping();
+            
             // Handle form submission
             const checkoutForm = document.getElementById('checkoutForm');
             const submitBtn = checkoutForm.querySelector('.submit-order-btn');
@@ -190,6 +281,9 @@
                     const orderId = `ORDER-${Date.now()}`;
                     
                     // Preparar datos de la orden
+                    const sameAsShipping = document.getElementById('sameAsShipping').checked;
+                    const shippingZone = document.getElementById('shippingZone').value;
+                    
                     const orderData = {
                         orderId: orderId,
                         items: cart.map(item => ({
@@ -208,6 +302,21 @@
                             address: document.getElementById('address').value,
                             city: document.getElementById('city').value,
                             zipCode: document.getElementById('zipCode').value
+                        },
+                        shipping: {
+                            zone: shippingZone,
+                            cost: currentShippingCost,
+                            address: document.getElementById('address').value,
+                            city: document.getElementById('city').value,
+                            zipCode: document.getElementById('zipCode').value
+                        },
+                        billing: sameAsShipping ? {
+                            sameAsShipping: true
+                        } : {
+                            sameAsShipping: false,
+                            address: document.getElementById('billingAddress').value,
+                            city: document.getElementById('billingCity').value,
+                            zipCode: document.getElementById('billingZipCode').value
                         },
                         baseUrl: window.location.origin,
                         status: 'pending',
