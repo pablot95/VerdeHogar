@@ -19,12 +19,9 @@ const paymentClient = new Payment(client);
 exports.createPayment = functions.https.onCall(async (data, context) => {
     try {
         console.log('Creating payment for order:', data.orderId);
+        console.log('Payment method:', data.paymentMethodId);
         
         // Validar datos recibidos
-        if (!data.token) {
-            throw new functions.https.HttpsError('invalid-argument', 'Token de pago no proporcionado');
-        }
-        
         if (!data.items || data.items.length === 0) {
             throw new functions.https.HttpsError('invalid-argument', 'No hay items en el carrito');
         }
@@ -33,15 +30,20 @@ exports.createPayment = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('invalid-argument', 'Información del comprador incompleta');
         }
         
+        // Para algunos métodos como account_money (Mercado Pago wallet), no se requiere token
+        const requiresToken = !['account_money'].includes(data.paymentMethodId);
+        
+        if (requiresToken && !data.token) {
+            throw new functions.https.HttpsError('invalid-argument', 'Token de pago no proporcionado');
+        }
+        
         // Calcular total
         const total = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) + (data.shipping || 0);
         
         // Crear pago
         const paymentData = {
             transaction_amount: total,
-            token: data.token,
             description: `Orden ${data.orderId} - HogarVerde`,
-            installments: parseInt(data.installments) || 1,
             payment_method_id: data.paymentMethodId,
             payer: {
                 email: data.payer.email,
@@ -62,6 +64,16 @@ exports.createPayment = functions.https.onCall(async (data, context) => {
                 }))
             }
         };
+        
+        // Solo agregar token si existe (requerido para tarjetas)
+        if (data.token) {
+            paymentData.token = data.token;
+        }
+        
+        // Solo agregar installments si existe (requerido para tarjetas)
+        if (data.installments) {
+            paymentData.installments = parseInt(data.installments) || 1;
+        }
         
         // Solo agregar issuer_id si existe y no está vacío
         if (data.issuerId && data.issuerId !== '') {
