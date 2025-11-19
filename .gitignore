@@ -70,8 +70,14 @@ node_modules/
 # Config files con credenciales (solo permitir .example)
 firebase-config.js
 
-# Archivos de testing con credenciales
+# Archivos de testing y documentación con credenciales
 TESTING_MERCADOPAGO.md
+SETUP_COMPLETO.md
+CONFIGURAR_MERCADOPAGO.md
+DEPLOY_MERCADOPAGO.md
+MERCADOPAGO_CLIENTE.md
+INTEGRACION_MERCADOPAGO.md
+*.backup
 
 # dataconnect generated files
 .dataconnect
