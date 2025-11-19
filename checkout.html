@@ -108,7 +108,7 @@
                             </p>
                         </div>
                         
-                        <button type="submit" class="submit-order-btn">Procesar Pago</button>
+                        <!-- Payment Brick tiene su propio botón submit, no necesitamos otro -->
                     </form>
                 </div>
                 
@@ -259,8 +259,7 @@
             console.log('✅ Renderizando resumen con', cart.length, 'items');
             renderCheckoutSummary();
             
-            updateCartCount();
-            initializeCart();
+            // NO llamar a initializeCart() ni updateCartCount() - no existen esos elementos aquí
             
             // Calcular envío inicial
             calculateShipping();
@@ -276,12 +275,13 @@
                     initialization: {
                         amount: total,
                         payer: {
-                            email: ''
+                            email: document.getElementById('email')?.value || ''
                         }
                     },
                     customization: {
                         paymentMethods: {
-                            creditCard: ['credit_card'],
+                            creditCard: 'all',
+                            debitCard: 'all',
                             maxInstallments: 12
                         },
                         visual: {
