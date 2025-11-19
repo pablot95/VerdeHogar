@@ -64,6 +64,14 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.local
+.env.*.local
+
+# Config files con credenciales (solo permitir .example)
+firebase-config.js
+
+# Archivos de testing con credenciales
+TESTING_MERCADOPAGO.md
 
 # dataconnect generated files
 .dataconnect
