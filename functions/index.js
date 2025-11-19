@@ -71,13 +71,21 @@ exports.createPaymentPreference = functions.https.onCall(async (data, context) =
         // Crear preferencia en Mercado Pago
         const response = await preferenceClient.create({ body: preference });
         
-        console.log('Preference created:', response.id);
+        console.log('Preference created successfully');
+        console.log('- ID:', response.id);
+        console.log('- init_point:', response.init_point);
+        console.log('- sandbox_init_point:', response.sandbox_init_point);
         
-        return { 
+        // Retornar con las claves en camelCase que espera el frontend
+        const responseData = { 
             preferenceId: response.id,
-            initPoint: response.init_point, // URL para redirigir al checkout de MP
-            sandboxInitPoint: response.sandbox_init_point // URL para modo test
+            initPoint: response.init_point,
+            sandboxInitPoint: response.sandbox_init_point
         };
+        
+        console.log('Returning to client:', JSON.stringify(responseData, null, 2));
+        
+        return responseData;
         
     } catch (error) {
         console.error('Error creating payment preference:', error);

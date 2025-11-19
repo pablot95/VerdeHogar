@@ -14,41 +14,7 @@
 </head>
 <body>
     <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, doc, updateDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyB8RmLCZkzPDNTy5R9FjPEwIt0KBv3emxA",
-          authDomain: "hogarverde-489e9.firebaseapp.com",
-          projectId: "hogarverde-489e9",
-          storageBucket: "hogarverde-489e9.firebasestorage.app",
-          messagingSenderId: "624499647908",
-          appId: "1:624499647908:web:88d9699f38c60bd7080d31"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        window.firebaseDB = db;
-        window.firebaseCollection = collection;
-        window.firebaseAddDoc = addDoc;
-        window.firebaseServerTimestamp = serverTimestamp;
-        window.firebaseGetDocs = getDocs;
-        window.firebaseDoc = doc;
-        window.firebaseUpdateDoc = updateDoc;
-        window.firebaseIncrement = increment;
-        window.firebaseQuery = query;
-        window.firebaseWhere = where;
-        window.firebaseApp = app;
-    </script>
-    
-    <script type="module">
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
-        const functions = getFunctions(window.firebaseApp);
-        window.firebaseFunctions = functions;
-        window.firebaseHttpsCallable = httpsCallable;
-    </script>
+    <script type="module" src="firebase-init.js"></script>
 
 
     <!-- Checkout Page Content -->
@@ -131,9 +97,22 @@
                         </div>
                         
                         <h2>Método de Pago</h2>
-                        <div class="payment-info">
-                            <p>Serás redirigido a Mercado Pago para completar tu pago de forma segura.</p>
-                            <p class="payment-methods-available">Métodos disponibles: tarjetas de crédito/débito, efectivo, transferencias.</p>
+                        <div class="payment-methods">
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="mercadopago" checked>
+                                <span>💳 Mercado Pago (Tarjetas, Efectivo, Transferencias)</span>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="whatsapp">
+                                <span>📱 WhatsApp (Coordinar pago)</span>
+                            </label>
+                        </div>
+                        
+                        <div id="whatsappInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: #e7f3ff; border-radius: 8px;">
+                            <p style="margin: 0; color: #0c5460;">
+                                <strong>📱 Pago por WhatsApp:</strong><br>
+                                Te enviaremos los detalles de tu pedido por WhatsApp y coordinaremos el método de pago (transferencia, efectivo, etc.)
+                            </p>
                         </div>
                         
                         <button type="submit" class="submit-order-btn">Continuar al Pago</button>
@@ -190,6 +169,9 @@
 
     <script src="script.js"></script>
     <script>
+        // NO redefinir cart, usar la global de script.js
+        // let cart = JSON.parse(localStorage.getItem('hogarverdeCart')) || [];
+        
         // Costos de envío por zona
         const shippingCosts = {
             capital: 5000,
@@ -198,7 +180,7 @@
             nacional: 15000
         };
         
-        let currentShippingCost = 5000; // Default
+        let currentShippingCost = 0; // Default
         
         // Calcular costo de envío
         function calculateShipping() {
@@ -212,11 +194,16 @@
             // Actualizar UI
             document.getElementById('summaryShipping').textContent = `$${currentShippingCost.toLocaleString()}`;
             
-            // Recalcular total
-            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const total = subtotal + currentShippingCost;
-            document.getElementById('summaryTotal').textContent = `$${total.toLocaleString()}`;
+            // Recalcular total - asegurar que cart existe
+            if (typeof cart !== 'undefined' && cart && cart.length > 0) {
+                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const total = subtotal + currentShippingCost;
+                document.getElementById('summaryTotal').textContent = `$${total.toLocaleString()}`;
+            }
         }
+        
+        // Asegurar scope global
+        window.calculateShipping = calculateShipping;
         
         // Toggle dirección de facturación
         function toggleBillingAddress() {
@@ -242,6 +229,9 @@
             }
         }
         
+        // Asegurar scope global
+        window.toggleBillingAddress = toggleBillingAddress;
+        
         // Inicializar Mercado Pago con Public Key del cliente
         const mp = new MercadoPago('APP_USR-6c98f692-1f6f-461a-8f87-e41588f81cf7', {
             locale: 'es-AR'
@@ -249,21 +239,48 @@
         
         // Initialize checkout page on load
         document.addEventListener('DOMContentLoaded', async () => {
-            await loadProductsFromFirebase();
-            updateCartCount();
-            initializeCart();
+            console.log('🛒 Checkout - Iniciando...');
+            console.log('🛒 Cart al inicio:', cart);
+            console.log('🛒 Cart length:', cart?.length);
             
-            // Check if cart is empty
-            if (cart.length === 0) {
+            // Recargar cart desde localStorage por si acaso
+            if (!cart || cart.length === 0) {
+                cart = JSON.parse(localStorage.getItem('hogarverdeCart')) || [];
+                console.log('🛒 Cart recargado desde localStorage:', cart);
+            }
+            
+            await loadProductsFromFirebase();
+            
+            // Check if cart is empty DESPUÉS de cargar
+            if (!cart || cart.length === 0) {
+                console.log('❌ Carrito vacío, redirigiendo...');
                 alert('Tu carrito está vacío');
                 window.location.href = 'productos.html';
                 return;
             }
             
+            console.log('✅ Renderizando resumen con', cart.length, 'items');
             renderCheckoutSummary();
+            
+            updateCartCount();
+            initializeCart();
             
             // Calcular envío inicial
             calculateShipping();
+            
+            // Toggle WhatsApp info
+            const paymentRadios = document.querySelectorAll('input[name="payment"]');
+            const whatsappInfo = document.getElementById('whatsappInfo');
+            
+            paymentRadios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    if (radio.value === 'whatsapp') {
+                        whatsappInfo.style.display = 'block';
+                    } else {
+                        whatsappInfo.style.display = 'none';
+                    }
+                });
+            });
             
             // Handle form submission
             const checkoutForm = document.getElementById('checkoutForm');
@@ -272,22 +289,57 @@
             checkoutForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
+                // Get selected payment method
+                const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+                
+                console.log('=== INICIO CHECKOUT ===');
+                console.log('Método de pago seleccionado:', paymentMethod);
+                
+                // If WhatsApp payment, handle differently
+                if (paymentMethod === 'whatsapp') {
+                    handleWhatsAppCheckout(submitBtn);
+                    return;
+                }
+                
                 // Deshabilitar botón para evitar múltiples clicks
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Procesando...';
                 
                 try {
+                    console.log('1. Verificando Firebase...');
+                    console.log('   - firebaseDB:', !!window.firebaseDB);
+                    console.log('   - firebaseFunctions:', !!window.firebaseFunctions);
+                    console.log('   - firebaseHttpsCallable:', !!window.firebaseHttpsCallable);
+                    
+                    // Validar que Firebase esté inicializado
+                    if (!window.firebaseDB) {
+                        throw new Error('Firebase no está inicializado. Recarga la página.');
+                    }
+                    
+                    if (!window.firebaseFunctions) {
+                        throw new Error('Firebase Functions no está disponible. Usa el método de WhatsApp.');
+                    }
+                    
+                    if (!window.firebaseHttpsCallable) {
+                        throw new Error('Firebase HttpsCallable no está disponible. Usa el método de WhatsApp.');
+                    }
+                    
                     // Crear ID único para la orden
                     const orderId = `ORDER-${Date.now()}`;
+                    console.log('2. Orden ID creado:', orderId);
                     
                     // Preparar datos de la orden
                     const sameAsShipping = document.getElementById('sameAsShipping').checked;
                     const shippingZone = document.getElementById('shippingZone').value;
                     
+                    if (!shippingZone) {
+                        throw new Error('Por favor selecciona una zona de envío');
+                    }
+                    
                     const orderData = {
                         orderId: orderId,
                         items: cart.map(item => ({
-                            firebaseId: item.firebaseId,
+                            firebaseId: item.firebaseId || item.id,
                             name: item.name,
                             description: item.description || '',
                             price: item.price,
@@ -324,13 +376,17 @@
                         createdAt: new Date().toISOString()
                     };
                     
+                    console.log('3. Datos de orden preparados:', orderData);
+                    console.log('4. Guardando orden en Firebase...');
+                    
                     // Guardar orden en Firebase
-                    await window.firebaseAddDoc(
+                    const docRef = await window.firebaseAddDoc(
                         window.firebaseCollection(window.firebaseDB, 'orders'),
                         orderData
                     );
                     
-                    console.log('Order created in Firebase:', orderId);
+                    console.log('5. Orden guardada con ID:', docRef.id);
+                    console.log('6. Llamando a createPaymentPreference...');
                     
                     // Llamar a Firebase Function para crear preferencia de pago
                     const createPayment = window.firebaseHttpsCallable(
@@ -338,25 +394,164 @@
                         'createPaymentPreference'
                     );
                     
+                    console.log('7. Función obtenida, ejecutando...');
                     const result = await createPayment(orderData);
                     
-                    console.log('Payment preference created:', result.data);
+                    console.log('8. Resultado de Mercado Pago:', result);
+                    console.log('   - result completo:', JSON.stringify(result, null, 2));
+                    console.log('   - result.data:', result.data);
+                    console.log('   - result.data.initPoint:', result.data?.initPoint);
+                    console.log('   - result.data.sandboxInitPoint:', result.data?.sandboxInitPoint);
+                    console.log('   - result.data.preferenceId:', result.data?.preferenceId);
+                    
+                    // Verificar que tenemos una URL de redirección
+                    if (!result.data) {
+                        console.error('❌ result.data es null o undefined');
+                        throw new Error('No se recibió respuesta de Mercado Pago. Intenta con WhatsApp.');
+                    }
+                    
+                    if (!result.data.sandboxInitPoint && !result.data.initPoint) {
+                        console.error('❌ No hay URLs de pago en la respuesta');
+                        console.error('Claves disponibles en result.data:', Object.keys(result.data));
+                        throw new Error('No se recibió URL de pago de Mercado Pago. Intenta con WhatsApp.');
+                    }
                     
                     // Limpiar carrito
-                    localStorage.removeItem('cart');
+                    localStorage.removeItem('hogarverdeCart');
+                    cart = [];
                     
-                    // Redirigir a Mercado Pago
-                    // En modo de prueba, usa sandboxInitPoint
-                    window.location.href = result.data.sandboxInitPoint || result.data.initPoint;
+                    console.log('9. Redirigiendo a Mercado Pago...');
+                    const paymentUrl = result.data.sandboxInitPoint || result.data.initPoint;
+                    console.log('   URL:', paymentUrl);
+                    
+                    // Redirigir a Mercado Pago (usa sandbox en modo test)
+                    window.location.href = paymentUrl;
                     
                 } catch (error) {
-                    console.error('Error al procesar el pago:', error);
-                    alert('Error al procesar el pago. Por favor intenta nuevamente.');
+                    console.error('=== ERROR EN CHECKOUT ===');
+                    console.error('Error completo:', error);
+                    console.error('Tipo:', error.constructor.name);
+                    console.error('Mensaje:', error.message);
+                    console.error('Code:', error.code);
+                    console.error('Details:', error.details);
+                    console.error('Stack:', error.stack);
+                    
+                    let errorMessage = 'Error al procesar el pago.';
+                    let suggestion = '\n\n💡 Sugerencia: Prueba con el método de pago por WhatsApp.';
+                    
+                    if (error.message.includes('Firebase')) {
+                        errorMessage = '🔥 Error de Firebase: ' + error.message;
+                    } else if (error.message.includes('Mercado Pago')) {
+                        errorMessage = '💳 Error de Mercado Pago: ' + error.message;
+                    } else if (error.code === 'functions/internal') {
+                        errorMessage = '⚙️ Error del servidor. La configuración de Mercado Pago puede tener problemas.';
+                    } else if (error.code === 'functions/not-found') {
+                        errorMessage = '❌ La función de pago no está disponible en el servidor.';
+                    } else if (error.message.includes('zona')) {
+                        errorMessage = error.message;
+                        suggestion = '';
+                    }
+                    
+                    alert(errorMessage + suggestion);
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Continuar al Pago';
                 }
             });
         });
+        
+        // Handle WhatsApp checkout
+        function handleWhatsAppCheckout(submitBtn) {
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Generando pedido...';
+                
+                const shippingZone = document.getElementById('shippingZone').value;
+                if (!shippingZone) {
+                    alert('Por favor selecciona una zona de envío');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Continuar al Pago';
+                    return;
+                }
+                
+                // Prepare order summary
+                const name = document.getElementById('fullName').value;
+                const phone = document.getElementById('phone').value;
+                const address = document.getElementById('address').value;
+                const city = document.getElementById('city').value;
+                const zipCode = document.getElementById('zipCode').value;
+                
+                const shippingNames = {
+                    capital: 'Capital Federal',
+                    gba: 'GBA',
+                    interior: 'Interior (Buenos Aires)',
+                    nacional: 'Resto del País'
+                };
+                
+                // Create WhatsApp message
+                let message = `🛒 *NUEVO PEDIDO - HogarVerde*\n\n`;
+                message += `👤 *Cliente:* ${name}\n`;
+                message += `📱 *Teléfono:* ${phone}\n`;
+                message += `📍 *Dirección:* ${address}, ${city} (CP: ${zipCode})\n`;
+                message += `🚚 *Zona:* ${shippingNames[shippingZone]} ($${currentShippingCost.toLocaleString()})\n\n`;
+                message += `📦 *Productos:*\n`;
+                
+                let subtotal = 0;
+                cart.forEach((item, index) => {
+                    const itemTotal = item.price * item.quantity;
+                    subtotal += itemTotal;
+                    message += `${index + 1}. ${item.name} x${item.quantity} - $${itemTotal.toLocaleString()}\n`;
+                });
+                
+                const total = subtotal + currentShippingCost;
+                message += `\n💰 *Subtotal:* $${subtotal.toLocaleString()}\n`;
+                message += `🚚 *Envío:* $${currentShippingCost.toLocaleString()}\n`;
+                message += `✅ *TOTAL:* $${total.toLocaleString()}`;
+                
+                // WhatsApp number (replace with your actual number)
+                const whatsappNumber = '5491234567890'; // CAMBIAR POR TU NÚMERO
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+                
+                // Save order to Firebase (optional, for record keeping)
+                if (window.firebaseDB && window.firebaseAddDoc) {
+                    const orderId = `WA-ORDER-${Date.now()}`;
+                    const orderData = {
+                        orderId: orderId,
+                        paymentMethod: 'whatsapp',
+                        items: cart,
+                        customer: { name, phone, address, city, zipCode },
+                        shipping: { zone: shippingZone, cost: currentShippingCost },
+                        total: total,
+                        status: 'pending',
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    window.firebaseAddDoc(
+                        window.firebaseCollection(window.firebaseDB, 'orders'),
+                        orderData
+                    ).catch(err => console.log('No se pudo guardar en Firebase:', err));
+                }
+                
+                // Clear cart
+                localStorage.removeItem('hogarverdeCart');
+                cart = [];
+                
+                // Open WhatsApp
+                window.open(whatsappUrl, '_blank');
+                
+                // Show success message
+                setTimeout(() => {
+                    alert('✅ Tu pedido se ha generado. Te redirigiremos al inicio.\n\nRevisaremos tu mensaje por WhatsApp y te contactaremos pronto.');
+                    window.location.href = 'index.html';
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error en WhatsApp checkout:', error);
+                alert('Error al generar el pedido. Intenta nuevamente.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Continuar al Pago';
+            }
+        }
     </script>
 </body>
 </html>

@@ -11,33 +11,7 @@
 </head>
 <body>
     <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, getDocs, doc, updateDoc, increment, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-        apiKey: "AIzaSyB8RmLCZkzPDNTy5R9FjPEwIt0KBv3emxA",
-        authDomain: "hogarverde-489e9.firebaseapp.com",
-        projectId: "hogarverde-489e9",
-        storageBucket: "hogarverde-489e9.firebasestorage.app",
-        messagingSenderId: "624499647908",
-        appId: "1:624499647908:web:88d9699f38c60bd7080d31"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        window.firebaseDB = db;
-        window.firebaseCollection = collection;
-        window.firebaseAddDoc = addDoc;
-        window.firebaseServerTimestamp = serverTimestamp;
-        window.firebaseGetDocs = getDocs;
-        window.firebaseDoc = doc;
-        window.firebaseUpdateDoc = updateDoc;
-        window.firebaseIncrement = increment;
-        window.firebaseQuery = query;
-        window.firebaseWhere = where;
-    </script>
+    <script type="module" src="firebase-init.js"></script>
 
     <!-- Products Page Content -->
     <div class="products-page-wrapper">
@@ -147,9 +121,16 @@
         // Initialize products page on load
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('Productos page: Iniciando carga...');
+            console.log('Firebase disponible:', !!window.firebaseDB);
             
+            // Cargar productos desde Firebase
             await loadProductsFromFirebase();
-            console.log('Productos cargados desde Firebase:', productsData);
+            console.log('Productos cargados:', productsData);
+            console.log('Total por categoría:', {
+                living: productsData.living?.length || 0,
+                dormitorio: productsData.dormitorio?.length || 0,
+                cocina: productsData.cocina?.length || 0
+            });
             
             // Get category from URL if present
             const urlParams = new URLSearchParams(window.location.search);
@@ -163,13 +144,18 @@
             }
             
             // Load products
+            console.log('Llamando a loadProductsByCategory con:', category);
             loadProductsByCategory(category);
+            
+            // Update UI
             updateProductsCount();
             updateCheckoutMainButton();
             updateCartCount();
             initializeCart();
             
             console.log('Productos page: Carga completa');
+            console.log('Grid element:', document.getElementById('allProductsGrid'));
+            console.log('Productos en grid:', document.querySelectorAll('.product-card').length);
         });
     </script>
 </body>

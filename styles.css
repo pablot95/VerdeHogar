@@ -255,7 +255,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .featured-products-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 2rem;
     margin-bottom: 3rem;
 }
@@ -361,7 +361,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .category-box:hover .category-overlay {
     opacity: 1;
-    transform: translateX(470px);
+    transform: translateX(40%);
 }
 
 /* Reverse layout for dormitorio and baño */
@@ -371,7 +371,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .category-box.reverse:hover .category-overlay {
     opacity: 1;
-    transform: translateX(-470px);
+    transform: translateX(-40%);
 }
 
 .category-overlay h2 {

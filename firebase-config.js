@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyB8RmLCZkzPDNTy5R9FjPEwIt0KBv3emxA",
   authDomain: "hogarverde-489e9.firebaseapp.com",
   projectId: "hogarverde-489e9",
-  storageBucket: "hogarverde-489e9.firebasestorage.app",
+  storageBucket: "hogarverde-489e9.appspot.com",
   messagingSenderId: "624499647908",
   appId: "1:624499647908:web:88d9699f38c60bd7080d31"
 };

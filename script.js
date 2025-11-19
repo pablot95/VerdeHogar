@@ -1,22 +1,24 @@
-// Initialize Lenis Smooth Scroll
-const lenis = new Lenis({
-    duration: 1.2,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    direction: 'vertical',
-    gestureDirection: 'vertical',
-    smooth: true,
-    mouseMultiplier: 1,
-    smoothTouch: false,
-    touchMultiplier: 2,
-    infinite: false,
-});
+// Configuración de scroll suave con Lenis
+if (typeof Lenis !== 'undefined') {
+    const lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        direction: 'vertical',
+        gestureDirection: 'vertical',
+        smooth: true,
+        mouseMultiplier: 1,
+        smoothTouch: false,
+        touchMultiplier: 2,
+        infinite: false,
+    });
 
-function raf(time) {
-    lenis.raf(time);
+    function raf(time) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+    }
+
     requestAnimationFrame(raf);
 }
-
-requestAnimationFrame(raf);
 
 // Global products array (will be loaded from Firebase)
 let productsData = {
@@ -28,7 +30,9 @@ let productsData = {
 // Load products from Firebase
 async function loadProductsFromFirebase() {
     if (!window.firebaseDB || !window.firebaseGetDocs || !window.firebaseCollection) {
-        console.error('Firebase not initialized');
+        console.warn('Firebase not initialized, using fallback products');
+        // Use fallback data
+        productsData = JSON.parse(JSON.stringify(fallbackProductsData));
         return;
     }
 
@@ -37,41 +41,49 @@ async function loadProductsFromFirebase() {
             window.firebaseCollection(window.firebaseDB, 'products')
         );
         
-        // Clear current data
-        productsData = {
-            living: [],
-            dormitorio: [],
-            cocina: [],
-        };
+        console.log('Firebase products found:', querySnapshot.size);
         
-        querySnapshot.forEach((doc) => {
-            const product = {
-                firebaseId: doc.id, // Store Firebase document ID
-                ...doc.data()
+        // If Firebase has products, use them
+        if (querySnapshot.size > 0) {
+            // Clear current data
+            productsData = {
+                living: [],
+                dormitorio: [],
+                cocina: [],
             };
             
-            console.log('Producto cargado:', product.name, 'Imagen:', product.image);
+            querySnapshot.forEach((doc) => {
+                const product = {
+                    firebaseId: doc.id, // Store Firebase document ID
+                    ...doc.data()
+                };
+                
+                console.log('Producto cargado:', product.name, 'Categoría:', product.category);
+                
+                // Add to appropriate category
+                if (productsData[product.category]) {
+                    productsData[product.category].push(product);
+                } else {
+                    console.warn('Categoría desconocida:', product.category);
+                }
+            });
             
-            // Add to appropriate category
-            if (productsData[product.category]) {
-                productsData[product.category].push(product);
-            }
-        });
+            console.log('Products loaded from Firebase:', productsData);
+        } else {
+            console.warn('No products in Firebase, using fallback data');
+            // Use fallback data if Firebase is empty
+            productsData = JSON.parse(JSON.stringify(fallbackProductsData));
+        }
         
-        console.log('Products loaded from Firebase:', productsData);
-        
-        // Reload UI with Firebase data
+        // Reload UI with data
         loadFeaturedProducts();
         loadSaleProducts();
         
-        // If products page is open, reload it
-        if (document.getElementById('productsPage').classList.contains('active')) {
-            const currentCategory = document.querySelector('input[name="category"]:checked')?.value || 'all';
-            loadProductsByCategory(currentCategory);
-        }
-        
     } catch (error) {
         console.error('Error loading products from Firebase:', error);
+        console.warn('Using fallback products due to error');
+        // Use fallback data on error
+        productsData = JSON.parse(JSON.stringify(fallbackProductsData));
     }
 }
 
@@ -84,7 +96,8 @@ const fallbackProductsData = {
             description: 'Sofá moderno de tres plazas, tapizado en tela premium',
             price: 89990,
             image: 'images/sillon.jpg',
-            category: 'living'
+            category: 'living',
+            stock: 10
         },
         {
             id: 2,
@@ -92,7 +105,8 @@ const fallbackProductsData = {
             description: 'Mesa de centro con diseño escandinavo, madera natural',
             price: 34990,
             image: 'images/mesa-ratona.jpg',
-            category: 'living'
+            category: 'living',
+            stock: 10
         },
         {
             id: 3,
@@ -100,7 +114,8 @@ const fallbackProductsData = {
             description: 'Biblioteca moderna con compartimentos ajustables',
             price: 45990,
             image: 'images/estante.jpg',
-            category: 'living'
+            category: 'living',
+            stock: 10
         },
         {
             id: 4,
@@ -108,7 +123,8 @@ const fallbackProductsData = {
             description: 'Set completo para living con diseño contemporáneo',
             price: 124990,
             image: 'images/living-room.jpg',
-            category: 'living'
+            category: 'living',
+            stock: 10
         }
     ],
     dormitorio: [
@@ -118,7 +134,8 @@ const fallbackProductsData = {
             description: 'Cama king size con cabecera acolchada premium',
             price: 119990,
             image: 'images/cama.jpg',
-            category: 'dormitorio'
+            category: 'dormitorio',
+            stock: 10
         },
         {
             id: 6,
@@ -126,7 +143,8 @@ const fallbackProductsData = {
             description: 'Set completo de dormitorio con cama, mesas de luz y placard',
             price: 189990,
             image: 'images/dormitorio.jpg',
-            category: 'dormitorio'
+            category: 'dormitorio',
+            stock: 10
         },
         {
             id: 7,
@@ -134,7 +152,8 @@ const fallbackProductsData = {
             description: 'Set de elementos decorativos para dormitorio moderno',
             price: 24990,
             image: 'images/decoracion.jpg',
-            category: 'dormitorio'
+            category: 'dormitorio',
+            stock: 10
         }
     ],
     cocina: [
@@ -144,7 +163,8 @@ const fallbackProductsData = {
             description: 'Módulos de cocina completos con terminación premium',
             price: 249990,
             image: 'images/cocina.jpg',
-            category: 'cocina'
+            category: 'cocina',
+            stock: 10
         },
         {
             id: 9,
@@ -152,7 +172,8 @@ const fallbackProductsData = {
             description: 'Diseño de espacios integrados para máximo confort',
             price: 159990,
             image: 'images/Living-comedor-fondo.jpg',
-            category: 'cocina'
+            category: 'cocina',
+            stock: 10
         },
         {
             id: 10,
@@ -160,7 +181,8 @@ const fallbackProductsData = {
             description: 'Mesa de comedor extensible para 6-8 personas',
             price: 67990,
             image: 'images/Living-comedor-fondo2.jpg',
-            category: 'cocina'
+            category: 'cocina',
+            stock: 10
         }
     ]
 };
@@ -282,10 +304,16 @@ function filterByCategory(category) {
     loadProductsByCategory(category);
 }
 
+// Asegurar scope global
+window.filterByCategory = filterByCategory;
+
 // Filter by Price
 function filterByPrice() {
     applyPriceFilter();
 }
+
+// Asegurar scope global
+window.filterByPrice = filterByPrice;
 
 // Apply Price Filter
 function applyPriceFilter() {
@@ -343,6 +371,9 @@ function clearFilters() {
     // Reload all products
     loadProductsByCategory('all');
 }
+
+// Asegurar scope global
+window.clearFilters = clearFilters;
 
 // Update Checkout Main Button
 function updateCheckoutMainButton() {
@@ -487,6 +518,10 @@ function decreaseQuantity(productId) {
     }
 }
 
+// Asegurar que estén en scope global
+window.increaseQuantity = increaseQuantity;
+window.decreaseQuantity = decreaseQuantity;
+
 function openCart() {
     document.getElementById('cartModal').classList.add('active');
     renderCart();
@@ -548,6 +583,9 @@ function addToCartWithQuantity(productId) {
     }
 }
 
+// Asegurar que esté en scope global
+window.addToCartWithQuantity = addToCartWithQuantity;
+
 // Add to Cart (legacy function for compatibility)
 function addToCart(productId) {
     addToCartWithQuantity(productId);
@@ -565,7 +603,10 @@ function findProductById(id) {
 // Update Cart Count
 function updateCartCount() {
     const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-    document.getElementById('cartCount').textContent = count;
+    const cartCountEl = document.getElementById('cartCount');
+    if (cartCountEl) {
+        cartCountEl.textContent = count;
+    }
     updateCheckoutMainButton();
     
     // Update all product card cart buttons
@@ -836,6 +877,22 @@ function renderCheckoutSummary() {
     const summaryShipping = document.getElementById('summaryShipping');
     const summaryTotal = document.getElementById('summaryTotal');
     
+    if (!summaryItems) {
+        console.log('⚠️ renderCheckoutSummary: elementos del DOM no encontrados');
+        return;
+    }
+    
+    console.log('📊 renderCheckoutSummary - cart:', cart);
+    console.log('📊 cart.length:', cart?.length || 0);
+    
+    if (!cart || cart.length === 0) {
+        summaryItems.innerHTML = '<div class="empty-cart-message">Tu carrito está vacío</div>';
+        if (summarySubtotal) summarySubtotal.textContent = '$0';
+        if (summaryShipping) summaryShipping.textContent = '$0';
+        if (summaryTotal) summaryTotal.textContent = '$0';
+        return;
+    }
+    
     let html = '';
     let subtotal = 0;
     
@@ -861,10 +918,15 @@ function renderCheckoutSummary() {
     const total = subtotal + shipping;
     
     summaryItems.innerHTML = html;
-    summarySubtotal.textContent = `$${subtotal.toLocaleString()}`;
-    summaryShipping.textContent = `$${shipping.toLocaleString()}`;
-    summaryTotal.textContent = `$${total.toLocaleString()}`;
+    if (summarySubtotal) summarySubtotal.textContent = `$${subtotal.toLocaleString()}`;
+    if (summaryShipping) summaryShipping.textContent = `$${shipping.toLocaleString()}`;
+    if (summaryTotal) summaryTotal.textContent = `$${total.toLocaleString()}`;
+    
+    console.log('✅ renderCheckoutSummary completado - subtotal:', subtotal);
 }
+
+// Asegurar que esté en scope global
+window.renderCheckoutSummary = renderCheckoutSummary;
 
 // Handle Checkout Submit
 async function handleCheckoutSubmit() {
