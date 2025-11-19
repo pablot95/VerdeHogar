@@ -438,14 +438,6 @@ h1, h2, h3, h4, h5, h6 {
     background-position: center;
     background-attachment: fixed;
     overflow: hidden;
-    opacity: 0;
-    transform: scale(0.95);
-    transition: opacity 1s ease, transform 1s ease;
-}
-
-.lifestyle-fullscreen.visible {
-    opacity: 1;
-    transform: scale(1);
 }
 
 .lifestyle-fullscreen-overlay {
@@ -1637,6 +1629,14 @@ body:has(.products-page.active) .header {
         background-attachment: scroll;
         height: 70vh;
         min-height: 500px;
+        opacity: 0;
+        transform: scale(0.95);
+        transition: opacity 1s ease, transform 1s ease;
+    }
+    
+    .lifestyle-fullscreen.visible {
+        opacity: 1;
+        transform: scale(1);
     }
     
     .lifestyle-fullscreen-content {
