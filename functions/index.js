@@ -13,14 +13,18 @@ const preferenceClient = new Preference(client);
 const paymentClient = new Payment(client);
 
 /**
- * Función para crear preferencia de pago en Mercado Pago
- * Se llama desde el frontend cuando el usuario confirma el pedido
+ * Función para procesar pago directamente con Checkout API
+ * Se llama desde el frontend cuando el usuario envía el formulario de pago
  */
-exports.createPaymentPreference = functions.https.onCall(async (data, context) => {
+exports.createPayment = functions.https.onCall(async (data, context) => {
     try {
-        console.log('Creating payment preference for order:', data.orderId);
+        console.log('Creating payment for order:', data.orderId);
         
         // Validar datos recibidos
+        if (!data.token) {
+            throw new functions.https.HttpsError('invalid-argument', 'Token de pago no proporcionado');
+        }
+        
         if (!data.items || data.items.length === 0) {
             throw new functions.https.HttpsError('invalid-argument', 'No hay items en el carrito');
         }
@@ -30,57 +34,53 @@ exports.createPaymentPreference = functions.https.onCall(async (data, context) =
         }
         
         // Calcular total
-        const total = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const total = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) + (data.shipping || 0);
         
-        // Crear preferencia de pago
-        const preference = {
-            items: data.items.map(item => ({
-                title: item.name || 'Producto',
-                description: item.description || '',
-                picture_url: item.image || '',
-                category_id: item.category || 'others',
-                quantity: parseInt(item.quantity),
-                unit_price: parseFloat(item.price)
-            })),
+        // Crear pago
+        const paymentData = {
+            transaction_amount: total,
+            token: data.token,
+            description: `Orden ${data.orderId} - HogarVerde`,
+            installments: data.installments || 1,
+            payment_method_id: data.paymentMethodId,
+            issuer_id: data.issuerId,
             payer: {
-                name: data.payer.name || '',
                 email: data.payer.email,
-                phone: {
-                    area_code: '',
-                    number: data.payer.phone || ''
-                },
-                address: {
-                    street_name: data.payer.address || '',
-                    zip_code: data.payer.zipCode || '',
-                    city_name: data.payer.city || ''
+                identification: {
+                    type: data.payer.identificationType || 'DNI',
+                    number: data.payer.identificationNumber || ''
                 }
             },
-            back_urls: {
-                success: `${data.baseUrl}/success.html`,
-                failure: `${data.baseUrl}/checkout.html`,
-                pending: `${data.baseUrl}/pending.html`
-            },
-            auto_return: 'approved',
-            statement_descriptor: 'HOGARVERDE',
             external_reference: data.orderId,
-            notification_url: `${data.baseUrl}/mercadopagoWebhook` // URL para webhook
+            statement_descriptor: 'HOGARVERDE',
+            metadata: {
+                order_id: data.orderId,
+                items: data.items.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price
+                }))
+            }
         };
         
-        console.log('Creating preference with data:', JSON.stringify(preference, null, 2));
+        console.log('Creating payment with data:', JSON.stringify(paymentData, null, 2));
         
-        // Crear preferencia en Mercado Pago
-        const response = await preferenceClient.create({ body: preference });
+        // Crear pago en Mercado Pago
+        const payment = await paymentClient.create({ body: paymentData });
         
-        console.log('Preference created successfully');
-        console.log('- ID:', response.id);
-        console.log('- init_point:', response.init_point);
-        console.log('- sandbox_init_point:', response.sandbox_init_point);
+        console.log('Payment created successfully');
+        console.log('- ID:', payment.id);
+        console.log('- Status:', payment.status);
+        console.log('- Status Detail:', payment.status_detail);
         
-        // Retornar con las claves en camelCase que espera el frontend
+        // Retornar resultado
         const responseData = { 
-            preferenceId: response.id,
-            initPoint: response.init_point,
-            sandboxInitPoint: response.sandbox_init_point
+            id: payment.id,
+            status: payment.status,
+            statusDetail: payment.status_detail,
+            paymentMethodId: payment.payment_method_id,
+            transactionAmount: payment.transaction_amount
         };
         
         console.log('Returning to client:', JSON.stringify(responseData, null, 2));
@@ -88,10 +88,10 @@ exports.createPaymentPreference = functions.https.onCall(async (data, context) =
         return responseData;
         
     } catch (error) {
-        console.error('Error creating payment preference:', error);
+        console.error('Error creating payment:', error);
         throw new functions.https.HttpsError(
             'internal', 
-            `Error al crear preferencia de pago: ${error.message}`
+            `Error al procesar el pago: ${error.message}`
         );
     }
 });

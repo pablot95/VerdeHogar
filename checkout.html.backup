@@ -405,35 +405,120 @@
                 return { success: false, error: error.message };
             }
         }
-        
-        // Handle form submission (legacy - can be removed if not used)
-        document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            
-            try {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Procesando...';
-                
-                const shippingZone = document.getElementById('shippingZone').value;
-                if (!shippingZone) {
-                    throw new Error('Por favor selecciona una zona de envío');
+                        })),
+                        payer: {
+                            name: document.getElementById('fullName').value,
+                            email: document.getElementById('email').value,
+                            phone: document.getElementById('phone').value,
+                            address: document.getElementById('address').value,
+                            city: document.getElementById('city').value,
+                            zipCode: document.getElementById('zipCode').value
+                        },
+                        shipping: {
+                            zone: shippingZone,
+                            cost: currentShippingCost,
+                            address: document.getElementById('address').value,
+                            city: document.getElementById('city').value,
+                            zipCode: document.getElementById('zipCode').value
+                        },
+                        billing: sameAsShipping ? {
+                            sameAsShipping: true
+                        } : {
+                            sameAsShipping: false,
+                            address: document.getElementById('billingAddress').value,
+                            city: document.getElementById('billingCity').value,
+                            zipCode: document.getElementById('billingZipCode').value
+                        },
+                        baseUrl: window.location.origin,
+                        status: 'pending',
+                        paymentStatus: 'pending',
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    console.log('3. Datos de orden preparados:', orderData);
+                    console.log('4. Guardando orden en Firebase...');
+                    
+                    // Guardar orden en Firebase
+                    const docRef = await window.firebaseAddDoc(
+                        window.firebaseCollection(window.firebaseDB, 'orders'),
+                        orderData
+                    );
+                    
+                    console.log('5. Orden guardada con ID:', docRef.id);
+                    console.log('6. Llamando a createPaymentPreference...');
+                    
+                    // Llamar a Firebase Function para crear preferencia de pago
+                    const createPayment = window.firebaseHttpsCallable(
+                        window.firebaseFunctions, 
+                        'createPaymentPreference'
+                    );
+                    
+                    console.log('7. Función obtenida, ejecutando...');
+                    const result = await createPayment(orderData);
+                    
+                    console.log('8. Resultado de Mercado Pago:', result);
+                    console.log('   - result completo:', JSON.stringify(result, null, 2));
+                    console.log('   - result.data:', result.data);
+                    console.log('   - result.data.initPoint:', result.data?.initPoint);
+                    console.log('   - result.data.sandboxInitPoint:', result.data?.sandboxInitPoint);
+                    console.log('   - result.data.preferenceId:', result.data?.preferenceId);
+                    
+                    // Verificar que tenemos una URL de redirección
+                    if (!result.data) {
+                        console.error('❌ result.data es null o undefined');
+                        throw new Error('No se recibió respuesta de Mercado Pago. Intenta con WhatsApp.');
+                    }
+                    
+                    if (!result.data.sandboxInitPoint && !result.data.initPoint) {
+                        console.error('❌ No hay URLs de pago en la respuesta');
+                        console.error('Claves disponibles en result.data:', Object.keys(result.data));
+                        throw new Error('No se recibió URL de pago de Mercado Pago. Intenta con WhatsApp.');
+                    }
+                    
+                    // Limpiar carrito
+                    localStorage.removeItem('hogarverdeCart');
+                    cart = [];
+                    
+                    console.log('9. Redirigiendo a Mercado Pago...');
+                    const paymentUrl = result.data.sandboxInitPoint || result.data.initPoint;
+                    console.log('   URL:', paymentUrl);
+                    
+                    // Redirigir a Mercado Pago (usa sandbox en modo test)
+                    window.location.href = paymentUrl;
+                    
+                } catch (error) {
+                    console.error('=== ERROR EN CHECKOUT ===');
+                    console.error('Error completo:', error);
+                    console.error('Tipo:', error.constructor.name);
+                    console.error('Mensaje:', error.message);
+                    console.error('Code:', error.code);
+                    console.error('Details:', error.details);
+                    console.error('Stack:', error.stack);
+                    
+                    let errorMessage = 'Error al procesar el pago.';
+                    let suggestion = '\n\n💡 Sugerencia: Prueba con el método de pago por WhatsApp.';
+                    
+                    if (error.message.includes('Firebase')) {
+                        errorMessage = '🔥 Error de Firebase: ' + error.message;
+                    } else if (error.message.includes('Mercado Pago')) {
+                        errorMessage = '💳 Error de Mercado Pago: ' + error.message;
+                    } else if (error.code === 'functions/internal') {
+                        errorMessage = '⚙️ Error del servidor. La configuración de Mercado Pago puede tener problemas.';
+                    } else if (error.code === 'functions/not-found') {
+                        errorMessage = '❌ La función de pago no está disponible en el servidor.';
+                    } else if (error.message.includes('zona')) {
+                        errorMessage = error.message;
+                        suggestion = '';
+                    }
+                    
+                    alert(errorMessage + suggestion);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Continuar al Pago';
                 }
-                
-                // Payment Brick handles the payment automatically
-                // This section is kept for compatibility but shouldn't be reached
-                
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.message);
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Procesar Pago';
-            }
+            });
         });
-    </script>
-</body>
-</html>
+        
+        // Handle WhatsApp checkout
         function handleWhatsAppCheckout(submitBtn) {
             try {
                 submitBtn.disabled = true;
