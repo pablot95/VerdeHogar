@@ -274,7 +274,15 @@
                 try {
                     const settings = {
                         initialization: {
-                            amount: total
+                            amount: total,
+                            preferenceId: `pref-${Date.now()}`
+                        },
+                        customization: {
+                            visual: {
+                                style: {
+                                    theme: 'default'
+                                }
+                            }
                         },
                         callbacks: {
                             onReady: () => {
