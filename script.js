@@ -712,6 +712,12 @@ function initializeCart() {
     const cartModal = document.getElementById('cartModal');
     const closeCart = document.getElementById('closeCart');
     
+    // Validar que los elementos existen (no están en checkout.html)
+    if (!cartIcon || !cartModal || !closeCart) {
+        console.log('⚠️ initializeCart: Elementos del carrito no encontrados (probablemente estamos en checkout)');
+        return;
+    }
+    
     cartIcon.addEventListener('click', () => {
         cartModal.classList.add('active');
         renderCart();
