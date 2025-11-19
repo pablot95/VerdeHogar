@@ -750,8 +750,26 @@ function initializeScrollAnimations() {
         });
     }, observerOptions);
     
+    // Observar elementos con animaciones normales
     document.querySelectorAll('.reveal-left, .reveal-right, .reveal-fade').forEach(el => {
         observer.observe(el);
+    });
+    
+    // Observador especial para lifestyle sections con efecto parallax
+    const lifestyleObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, {
+        threshold: 0.2,
+        rootMargin: '0px'
+    });
+    
+    // Observar todas las lifestyle sections
+    document.querySelectorAll('.lifestyle-fullscreen').forEach(el => {
+        lifestyleObserver.observe(el);
     });
 }
 
