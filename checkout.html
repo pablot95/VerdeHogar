@@ -98,17 +98,19 @@
                         
                         <h2>Método de Pago</h2>
                         
-                        <!-- Contenedor del formulario de pago de Mercado Pago -->
-                        <div id="paymentBrick_container"></div>
-                        
-                        <div style="margin-top: 1rem; padding: 1rem; background: #e7f3ff; border-radius: 8px;">
-                            <p style="margin: 0; color: #0c5460; font-size: 0.9rem;">
+                        <div style="margin-top: 1rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+                            <p style="margin: 0 0 1rem 0; color: #495057; font-size: 0.95rem;">
                                 <strong>💳 Pago Seguro con Mercado Pago</strong><br>
-                                Ingresa los datos de tu tarjeta de forma segura. Aceptamos todas las tarjetas.
+                                Serás redirigido a Mercado Pago para completar el pago de forma segura.
+                            </p>
+                            <p style="margin: 0; color: #6c757d; font-size: 0.85rem;">
+                                ✓ Aceptamos todas las tarjetas<br>
+                                ✓ Pago con dinero en Mercado Pago<br>
+                                ✓ Pago en efectivo (Rapipago, Pago Fácil)
                             </p>
                         </div>
                         
-                        <!-- Payment Brick tiene su propio botón submit, no necesitamos otro -->
+                        <button type="submit" class="submit-order-btn">Continuar al Pago</button>
                     </form>
                 </div>
                 
@@ -225,15 +227,6 @@
         // Asegurar scope global
         window.toggleBillingAddress = toggleBillingAddress;
         
-        // Inicializar Mercado Pago con Public Key TEST
-        const mp = new MercadoPago('TEST-ecc03a5d-b9ef-4a5a-b866-d5c17835d15e', {
-            locale: 'es-AR'
-        });
-        
-        // Variable global para el Brick
-        let bricksBuilder;
-        let paymentBrickController;
-        
         // Initialize checkout page on load
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🛒 Checkout - Iniciando...');
@@ -259,155 +252,11 @@
             console.log('✅ Renderizando resumen con', cart.length, 'items');
             renderCheckoutSummary();
             
-            // NO llamar a initializeCart() ni updateCartCount() - no existen esos elementos aquí
-            
             // Calcular envío inicial
             calculateShipping();
-            
-            // Inicializar Payment Brick
-            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const total = subtotal + currentShippingCost;
-            
-            bricksBuilder = mp.bricks();
-            
-            const renderPaymentBrick = async (bricksBuilder) => {
-                try {
-                    const settings = {
-                        initialization: {
-                            amount: total,
-                            preferenceId: `pref-${Date.now()}`
-                        },
-                        customization: {
-                            visual: {
-                                style: {
-                                    theme: 'default'
-                                }
-                            }
-                        },
-                        callbacks: {
-                            onReady: () => {
-                                console.log('✅ Payment Brick listo');
-                            },
-                            onSubmit: async ({ selectedPaymentMethod, formData }) => {
-                                console.log('🎯 Procesando pago...', selectedPaymentMethod, formData);
-                                return handlePaymentSubmit(formData, selectedPaymentMethod);
-                            },
-                            onError: (error) => {
-                                console.error('❌ Error en Payment Brick:', error);
-                            }
-                        }
-                    };
-                    
-                    console.log('🎨 Creando Payment Brick con monto:', total);
-                    paymentBrickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
-                    console.log('✅ Payment Brick creado exitosamente');
-                } catch (error) {
-                    console.error('❌ Error creando Payment Brick:', error);
-                    alert('Error al cargar el formulario de pago. Por favor recarga la página.');
-                }
-            };
-            
-            await renderPaymentBrick(bricksBuilder);
         });
         
-        // Manejar envío del pago desde Payment Brick
-        async function handlePaymentSubmit(formData, selectedPaymentMethod) {
-            try {
-                console.log('🎯 Procesando pago...', formData);
-                
-                // Validar que Firebase esté inicializado
-                if (!window.firebaseDB || !window.firebaseFunctions) {
-                    throw new Error('Firebase no está inicializado correctamente');
-                }
-                
-                // Crear ID único para la orden
-                const orderId = `ORDER-${Date.now()}`;
-                console.log('📝 Orden ID creado:', orderId);
-                
-                // Preparar datos de la orden
-                const sameAsShipping = document.getElementById('sameAsShipping').checked;
-                const shippingZone = document.getElementById('shippingZone').value;
-                
-                if (!shippingZone) {
-                    throw new Error('Por favor selecciona una zona de envío');
-                }
-                
-                const orderData = {
-                    orderId: orderId,
-                    token: formData.token,
-                    paymentMethodId: formData.payment_method_id,
-                    issuerId: formData.issuer_id || '',
-                    installments: parseInt(formData.installments) || 1,
-                    items: cart.map(item => ({
-                        id: item.id,
-                        firebaseId: item.firebaseId || item.id,
-                        name: item.name,
-                        description: item.description || '',
-                        price: item.price,
-                        quantity: item.quantity,
-                        image: item.image || '',
-                        category: item.category || 'general'
-                    })),
-                    payer: {
-                        name: document.getElementById('fullName').value,
-                        email: formData.payer.email || document.getElementById('email').value,
-                        phone: document.getElementById('phone').value,
-                        address: document.getElementById('address').value,
-                        city: document.getElementById('city').value,
-                        zipCode: document.getElementById('zipCode').value,
-                        identificationType: formData.payer.identification?.type || 'DNI',
-                        identificationNumber: formData.payer.identification?.number || ''
-                    },
-                    shipping: currentShippingCost,
-                    status: 'pending',
-                    paymentStatus: 'pending',
-                    createdAt: new Date().toISOString()
-                };
-                
-                console.log('💾 Guardando orden en Firebase...');
-                
-                // Guardar orden en Firebase
-                const docRef = await window.firebaseAddDoc(
-                    window.firebaseCollection(window.firebaseDB, 'orders'),
-                    orderData
-                );
-                
-                console.log('✅ Orden guardada con ID:', docRef.id);
-                console.log('🔄 Llamando a createPayment...');
-                
-                // Llamar a Firebase Function para procesar pago
-                const createPayment = window.firebaseHttpsCallable(
-                    window.firebaseFunctions,
-                    'createPayment'
-                );
-                
-                const result = await createPayment(orderData);
-                
-                console.log('💳 Resultado del pago:', result.data);
-                
-                // Limpiar carrito
-                localStorage.removeItem('hogarverdeCart');
-                cart = [];
-                
-                // Verificar estado del pago
-                if (result.data.status === 'approved') {
-                    window.location.href = `success.html?payment_id=${result.data.id}`;
-                } else if (result.data.status === 'in_process' || result.data.status === 'pending') {
-                    window.location.href = `pending.html?payment_id=${result.data.id}`;
-                } else {
-                    throw new Error(`Pago rechazado: ${result.data.statusDetail || 'Verifica los datos de tu tarjeta'}`);
-                }
-                
-                return { success: true };
-                
-            } catch (error) {
-                console.error('❌ Error procesando pago:', error);
-                alert(`Error al procesar el pago: ${error.message}`);
-                return { success: false, error: error.message };
-            }
-        }
-        
-        // Handle form submission (legacy - can be removed if not used)
+        // Handle form submission
         document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -422,14 +271,85 @@
                     throw new Error('Por favor selecciona una zona de envío');
                 }
                 
-                // Payment Brick handles the payment automatically
-                // This section is kept for compatibility but shouldn't be reached
+                // Validar que Firebase esté inicializado
+                if (!window.firebaseDB || !window.firebaseFunctions) {
+                    throw new Error('Firebase no está inicializado correctamente');
+                }
+                
+                // Crear ID único para la orden
+                const orderId = `ORDER-${Date.now()}`;
+                console.log('📝 Orden ID creado:', orderId);
+                
+                // Preparar datos de la orden
+                const orderData = {
+                    orderId: orderId,
+                    items: cart.map(item => ({
+                        id: item.id,
+                        firebaseId: item.firebaseId || item.id,
+                        name: item.name,
+                        description: item.description || '',
+                        price: item.price,
+                        quantity: item.quantity,
+                        image: item.image || '',
+                        category: item.category || 'general'
+                    })),
+                    payer: {
+                        name: document.getElementById('fullName').value,
+                        email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value,
+                        address: document.getElementById('address').value,
+                        city: document.getElementById('city').value,
+                        zipCode: document.getElementById('zipCode').value
+                    },
+                    shipping: currentShippingCost,
+                    baseUrl: window.location.origin,
+                    status: 'pending',
+                    paymentStatus: 'pending',
+                    createdAt: new Date().toISOString()
+                };
+                
+                console.log('💾 Guardando orden en Firebase...');
+                
+                // Guardar orden en Firebase
+                const docRef = await window.firebaseAddDoc(
+                    window.firebaseCollection(window.firebaseDB, 'orders'),
+                    orderData
+                );
+                
+                console.log('✅ Orden guardada con ID:', docRef.id);
+                console.log('🔄 Llamando a createPaymentPreference...');
+                
+                // Llamar a Firebase Function para crear preferencia de pago
+                const createPaymentPreference = window.firebaseHttpsCallable(
+                    window.firebaseFunctions,
+                    'createPaymentPreference'
+                );
+                
+                const result = await createPaymentPreference(orderData);
+                
+                console.log('💳 Preferencia creada:', result.data);
+                console.log('   - preferenceId:', result.data.preferenceId);
+                console.log('   - sandboxInitPoint:', result.data.sandboxInitPoint);
+                
+                // Verificar que tenemos una URL de redirección
+                if (!result.data || (!result.data.sandboxInitPoint && !result.data.initPoint)) {
+                    throw new Error('No se recibió URL de pago de Mercado Pago');
+                }
+                
+                // Limpiar carrito
+                localStorage.removeItem('hogarverdeCart');
+                cart = [];
+                
+                // Redirigir a Mercado Pago
+                console.log('🚀 Redirigiendo a Mercado Pago...');
+                const paymentUrl = result.data.sandboxInitPoint || result.data.initPoint;
+                window.location.href = paymentUrl;
                 
             } catch (error) {
-                console.error('Error:', error);
-                alert(error.message);
+                console.error('❌ Error procesando orden:', error);
+                alert(`Error al procesar la orden: ${error.message}`);
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Procesar Pago';
+                submitBtn.textContent = 'Continuar al Pago';
             }
         });
         

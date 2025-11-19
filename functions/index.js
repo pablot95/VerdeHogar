@@ -13,6 +13,96 @@ const preferenceClient = new Preference(client);
 const paymentClient = new Payment(client);
 
 /**
+ * Función para crear preferencia de pago (Checkout Pro - Redirect)
+ * Genera una URL de pago donde el usuario será redirigido
+ */
+exports.createPaymentPreference = functions.https.onCall(async (data, context) => {
+    try {
+        console.log('Creating payment preference for order:', data.orderId);
+        
+        // Validar datos
+        if (!data.items || data.items.length === 0) {
+            throw new functions.https.HttpsError('invalid-argument', 'No hay items en el carrito');
+        }
+        
+        if (!data.payer || !data.payer.email) {
+            throw new functions.https.HttpsError('invalid-argument', 'Información del comprador incompleta');
+        }
+        
+        // Preparar items para Mercado Pago
+        const items = data.items.map(item => ({
+            id: item.id,
+            title: item.name,
+            description: item.description || item.name,
+            picture_url: item.image || '',
+            category_id: item.category || 'general',
+            quantity: item.quantity,
+            unit_price: item.price,
+            currency_id: 'ARS'
+        }));
+        
+        // Calcular total
+        const subtotal = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+        const shippingCost = data.shipping || 0;
+        
+        // Crear preferencia
+        const preferenceData = {
+            items: items,
+            payer: {
+                name: data.payer.name,
+                email: data.payer.email,
+                phone: {
+                    area_code: '',
+                    number: data.payer.phone || ''
+                },
+                address: {
+                    street_name: data.payer.address || '',
+                    street_number: '',
+                    zip_code: data.payer.zipCode || ''
+                }
+            },
+            shipments: {
+                cost: shippingCost,
+                mode: 'not_specified'
+            },
+            back_urls: {
+                success: `${data.baseUrl || 'https://hogarverde.vercel.app'}/success.html`,
+                failure: `${data.baseUrl || 'https://hogarverde.vercel.app'}/failure.html`,
+                pending: `${data.baseUrl || 'https://hogarverde.vercel.app'}/pending.html`
+            },
+            auto_return: 'approved',
+            external_reference: data.orderId,
+            statement_descriptor: 'HOGARVERDE',
+            notification_url: 'https://us-central1-hogarverde-489e9.cloudfunctions.net/mercadopagoWebhook',
+            metadata: {
+                order_id: data.orderId
+            }
+        };
+        
+        console.log('Creating preference with data:', JSON.stringify(preferenceData, null, 2));
+        
+        // Crear preferencia
+        const preference = await preferenceClient.create({ body: preferenceData });
+        
+        console.log('Preference created successfully');
+        console.log('- ID:', preference.id);
+        console.log('- Init Point:', preference.init_point);
+        console.log('- Sandbox Init Point:', preference.sandbox_init_point);
+        
+        // Retornar URLs
+        return {
+            preferenceId: preference.id,
+            initPoint: preference.init_point,
+            sandboxInitPoint: preference.sandbox_init_point
+        };
+        
+    } catch (error) {
+        console.error('Error creating preference:', error);
+        throw new functions.https.HttpsError('internal', `Error al crear la preferencia: ${error.message}`);
+    }
+});
+
+/**
  * Función para procesar pago directamente con Checkout API
  * Se llama desde el frontend cuando el usuario envía el formulario de pago
  */
