@@ -281,8 +281,7 @@
                     customization: {
                         paymentMethods: {
                             creditCard: 'all',
-                            debitCard: 'all',
-                            maxInstallments: 12
+                            debitCard: 'all'
                         },
                         visual: {
                             style: {
@@ -336,8 +335,8 @@
                     orderId: orderId,
                     token: formData.token,
                     paymentMethodId: formData.payment_method_id,
-                    issuerId: formData.issuer_id,
-                    installments: formData.installments,
+                    issuerId: formData.issuer_id || '',
+                    installments: parseInt(formData.installments) || 1,
                     items: cart.map(item => ({
                         id: item.id,
                         firebaseId: item.firebaseId || item.id,

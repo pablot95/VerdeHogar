@@ -41,14 +41,13 @@ exports.createPayment = functions.https.onCall(async (data, context) => {
             transaction_amount: total,
             token: data.token,
             description: `Orden ${data.orderId} - HogarVerde`,
-            installments: data.installments || 1,
+            installments: parseInt(data.installments) || 1,
             payment_method_id: data.paymentMethodId,
-            issuer_id: data.issuerId,
             payer: {
                 email: data.payer.email,
                 identification: {
                     type: data.payer.identificationType || 'DNI',
-                    number: data.payer.identificationNumber || ''
+                    number: data.payer.identificationNumber || '00000000'
                 }
             },
             external_reference: data.orderId,
@@ -63,6 +62,11 @@ exports.createPayment = functions.https.onCall(async (data, context) => {
                 }))
             }
         };
+        
+        // Solo agregar issuer_id si existe y no está vacío
+        if (data.issuerId && data.issuerId !== '') {
+            paymentData.issuer_id = data.issuerId;
+        }
         
         console.log('Creating payment with data:', JSON.stringify(paymentData, null, 2));
         
