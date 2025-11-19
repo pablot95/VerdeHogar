@@ -271,40 +271,32 @@
             bricksBuilder = mp.bricks();
             
             const renderPaymentBrick = async (bricksBuilder) => {
-                const settings = {
-                    initialization: {
-                        amount: total,
-                        payer: {
-                            email: document.getElementById('email')?.value || ''
-                        }
-                    },
-                    customization: {
-                        paymentMethods: {
-                            creditCard: 'all',
-                            debitCard: 'all',
-                            mercadoPago: 'all'  // Habilitar pago con cuenta de Mercado Pago
+                try {
+                    const settings = {
+                        initialization: {
+                            amount: total
                         },
-                        visual: {
-                            style: {
-                                theme: 'default'
+                        callbacks: {
+                            onReady: () => {
+                                console.log('✅ Payment Brick listo');
+                            },
+                            onSubmit: async ({ selectedPaymentMethod, formData }) => {
+                                console.log('🎯 Procesando pago...', selectedPaymentMethod, formData);
+                                return handlePaymentSubmit(formData, selectedPaymentMethod);
+                            },
+                            onError: (error) => {
+                                console.error('❌ Error en Payment Brick:', error);
                             }
                         }
-                    },
-                    callbacks: {
-                        onReady: () => {
-                            console.log('✅ Payment Brick listo');
-                        },
-                        onSubmit: async ({ selectedPaymentMethod, formData }) => {
-                            console.log('🎯 Procesando pago...', selectedPaymentMethod, formData);
-                            return handlePaymentSubmit(formData, selectedPaymentMethod);
-                        },
-                        onError: (error) => {
-                            console.error('❌ Error en Payment Brick:', error);
-                        }
-                    }
-                };
-                
-                paymentBrickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+                    };
+                    
+                    console.log('🎨 Creando Payment Brick con monto:', total);
+                    paymentBrickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+                    console.log('✅ Payment Brick creado exitosamente');
+                } catch (error) {
+                    console.error('❌ Error creando Payment Brick:', error);
+                    alert('Error al cargar el formulario de pago. Por favor recarga la página.');
+                }
             };
             
             await renderPaymentBrick(bricksBuilder);
