@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Producto - HogarVerde</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Firebase SDK -->
+    <script type="module" src="firebase-init.js"></script>
+
+    <!-- Product Detail Page -->
+    <div class="product-detail-page">
+        <div class="product-detail-container">
+            <!-- Back Button -->
+            <button class="back-btn" onclick="window.history.back()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Volver
+            </button>
+
+            <!-- Product Detail Content -->
+            <div class="product-detail-content" id="productDetailContent">
+                <!-- Content will be loaded here -->
+            </div>
+
+            <!-- Related Products -->
+            <section class="related-products-section">
+                <h2 class="section-title">Productos Relacionados</h2>
+                <div class="related-products-grid" id="relatedProductsGrid">
+                    <!-- Related products will be loaded here -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="cart-modal" id="cartModal">
+        <div class="cart-modal-content">
+            <div class="cart-header">
+                <h2>Tu Carrito</h2>
+                <button class="close-cart" id="closeCart">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items will be loaded here -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Total:</span>
+                    <span id="cartTotal">$0</span>
+                </div>
+                <button class="checkout-btn" onclick="window.location.href='checkout.html'">Finalizar Compra</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Load product detail on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Product Detail: Iniciando carga...');
+            
+            // Load products from Firebase
+            await loadProductsFromFirebase();
+            
+            // Get product ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = parseInt(urlParams.get('id'));
+            
+            if (!productId) {
+                console.error('No product ID provided');
+                window.location.href = 'productos.html';
+                return;
+            }
+            
+            // Find product
+            const product = findProductById(productId);
+            
+            if (!product) {
+                console.error('Product not found:', productId);
+                alert('Producto no encontrado');
+                window.location.href = 'productos.html';
+                return;
+            }
+            
+            // Render product detail
+            renderProductDetail(product);
+            
+            // Load related products
+            loadRelatedProducts(product);
+            
+            // Initialize cart
+            updateCartCount();
+            initializeCart();
+            
+            console.log('Product Detail: Carga completa');
+        });
+
+        // Render product detail
+        function renderProductDetail(product) {
+            const container = document.getElementById('productDetailContent');
+            
+            // Check if product is in cart
+            const cartItem = cart.find(item => item.id === product.id);
+            const inCart = cartItem ? cartItem.quantity : 0;
+            
+            // Get stock
+            const stock = typeof product.stock === 'number' ? product.stock : 0;
+            const isOutOfStock = stock === 0;
+            const stockClass = stock <= 5 ? 'low-stock' : '';
+            const stockText = stock === 0 ? 'Sin stock' : (stock <= 5 ? `Solo quedan ${stock} unidades` : `Stock disponible: ${stock} unidades`);
+            
+            // Fix image URL
+            let imageUrl = product.image;
+            if (imageUrl && imageUrl.includes('imgur.com')) {
+                const imgurMatch = imageUrl.match(/imgur\.com\/([a-zA-Z0-9]+)\.?(\w+)?/);
+                if (imgurMatch) {
+                    const imgurId = imgurMatch[1];
+                    const ext = imgurMatch[2] || 'jpeg';
+                    imageUrl = `https://wsrv.nl/?url=i.imgur.com/${imgurId}.${ext}&output=webp`;
+                }
+            }
+            
+            container.innerHTML = `
+                <div class="product-detail-grid">
+                    <div class="product-detail-image-section">
+                        <div class="product-detail-image-main">
+                            <img src="${imageUrl}" alt="${product.name}" id="mainProductImage" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22600%22%3E%3Crect fill=%22%23e0e0e0%22 width=%22800%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2224%22%3EImagen No Disponible%3C/text%3E%3C/svg%3E';">
+                            ${isOutOfStock ? '<div class="stock-badge out-of-stock">Sin Stock</div>' : (stock <= 5 ? '<div class="stock-badge">Últimas unidades</div>' : '')}
+                        </div>
+                    </div>
+                    
+                    <div class="product-detail-info-section">
+                        <div class="product-detail-category">${getCategoryName(product.category)}</div>
+                        <h1 class="product-detail-title">${product.name}</h1>
+                        <div class="product-detail-price">$${product.price.toLocaleString()}</div>
+                        <div class="product-detail-stock ${stockClass}">${stockText}</div>
+                        
+                        <div class="product-detail-description">
+                            <h3>Descripción</h3>
+                            <p>${product.description}</p>
+                        </div>
+                        
+                        <div class="product-detail-features">
+                            <h3>Características</h3>
+                            <ul>
+                                <li><strong>Categoría:</strong> ${getCategoryName(product.category)}</li>
+                                <li><strong>Disponibilidad:</strong> ${isOutOfStock ? 'Agotado' : 'En stock'}</li>
+                                <li><strong>Código:</strong> #${product.id}</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="product-detail-actions">
+                            <div class="product-quantity-selector">
+                                <label>Cantidad:</label>
+                                <div class="quantity-controls">
+                                    <button class="qty-control-btn" onclick="decreaseDetailQuantity()" ${isOutOfStock ? 'disabled' : ''}>-</button>
+                                    <span class="qty-display" id="detailQty">1</span>
+                                    <button class="qty-control-btn" onclick="increaseDetailQuantity(${product.id})" ${isOutOfStock ? 'disabled' : ''}>+</button>
+                                </div>
+                            </div>
+                            
+                            <button class="add-to-cart-detail-btn" onclick="addToCartFromDetail(${product.id})" ${isOutOfStock ? 'disabled' : ''}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M9 2L7.17 4H3a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-4.17L15 2H9z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                ${isOutOfStock ? 'Sin stock' : 'Agregar al Carrito'}
+                            </button>
+                            
+                            <button class="checkout-direct-btn" onclick="buyNow(${product.id})" ${isOutOfStock ? 'disabled' : ''}>
+                                Comprar Ahora
+                            </button>
+                        </div>
+                        
+                        ${inCart > 0 ? `
+                            <div class="product-in-cart-notice">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 6L9 17l-5-5" stroke="#4A7C2C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Tienes ${inCart} ${inCart === 1 ? 'unidad' : 'unidades'} en el carrito
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get category name in Spanish
+        function getCategoryName(category) {
+            const categoryNames = {
+                'living': 'Living',
+                'dormitorio': 'Dormitorio',
+                'cocina': 'Cocina'
+            };
+            return categoryNames[category] || category;
+        }
+
+        // Load related products
+        function loadRelatedProducts(currentProduct) {
+            const relatedGrid = document.getElementById('relatedProductsGrid');
+            if (!relatedGrid) return;
+            
+            // Get products from same category, excluding current product
+            const relatedProducts = productsData[currentProduct.category]
+                .filter(p => p.id !== currentProduct.id)
+                .slice(0, 4);
+            
+            // If not enough products in same category, add from other categories
+            if (relatedProducts.length < 4) {
+                const otherCategories = Object.keys(productsData).filter(cat => cat !== currentProduct.category);
+                for (const category of otherCategories) {
+                    const additionalProducts = productsData[category].slice(0, 4 - relatedProducts.length);
+                    relatedProducts.push(...additionalProducts);
+                    if (relatedProducts.length >= 4) break;
+                }
+            }
+            
+            relatedGrid.innerHTML = '';
+            relatedProducts.forEach(product => {
+                const productCard = createProductCard(product);
+                relatedGrid.appendChild(productCard);
+            });
+        }
+
+        // Quantity controls for detail page
+        let detailQuantity = 1;
+
+        function increaseDetailQuantity(productId) {
+            const product = findProductById(productId);
+            const maxStock = typeof product?.stock === 'number' ? product.stock : 0;
+            
+            if (maxStock === 0) return;
+            
+            const cartItem = cart.find(item => item.id === productId);
+            const inCart = cartItem ? cartItem.quantity : 0;
+            const availableStock = maxStock - inCart;
+            
+            if (detailQuantity < availableStock) {
+                detailQuantity++;
+                document.getElementById('detailQty').textContent = detailQuantity;
+            }
+        }
+
+        function decreaseDetailQuantity() {
+            if (detailQuantity > 1) {
+                detailQuantity--;
+                document.getElementById('detailQty').textContent = detailQuantity;
+            }
+        }
+
+        // Add to cart from detail page
+        function addToCartFromDetail(productId) {
+            const product = findProductById(productId);
+            if (!product) return;
+
+            const existingItem = cart.find(item => item.id === productId);
+            const maxStock = typeof product.stock === 'number' ? product.stock : 0;
+            
+            if (maxStock === 0) {
+                alert('Este producto no tiene stock disponible.');
+                return;
+            }
+            
+            const currentInCart = existingItem ? existingItem.quantity : 0;
+            const newTotal = currentInCart + detailQuantity;
+            
+            if (newTotal > maxStock) {
+                alert(`Solo hay ${maxStock} unidades disponibles. Ya tienes ${currentInCart} en el carrito.`);
+                return;
+            }
+            
+            if (existingItem) {
+                existingItem.quantity += detailQuantity;
+            } else {
+                cart.push({ ...product, quantity: detailQuantity });
+            }
+            
+            saveCart();
+            updateCartCount();
+            
+            // Show success message
+            const btn = document.querySelector('.add-to-cart-detail-btn');
+            const originalText = btn.textContent;
+            btn.textContent = '¡Agregado al carrito!';
+            btn.style.background = '#8BC34A';
+            
+            setTimeout(() => {
+                btn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 2L7.17 4H3a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-4.17L15 2H9z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Agregar al Carrito
+                `;
+                btn.style.background = '';
+                detailQuantity = 1;
+                document.getElementById('detailQty').textContent = '1';
+                
+                // Reload page to update cart notice
+                window.location.reload();
+            }, 2000);
+        }
+
+        // Buy now - add to cart and go to checkout
+        function buyNow(productId) {
+            addToCartFromDetail(productId);
+            setTimeout(() => {
+                window.location.href = 'checkout.html';
+            }, 500);
+        }
+
+        // Make functions global
+        window.increaseDetailQuantity = increaseDetailQuantity;
+        window.decreaseDetailQuantity = decreaseDetailQuantity;
+        window.addToCartFromDetail = addToCartFromDetail;
+        window.buyNow = buyNow;
+    </script>
+</body>
+</html>

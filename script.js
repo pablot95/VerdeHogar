@@ -403,6 +403,15 @@ function createProductCard(product) {
     card.dataset.productId = product.id;
     card.dataset.firebaseId = product.firebaseId || '';
     
+    // Make card clickable to go to product detail
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', (e) => {
+        // Don't redirect if clicking on buttons
+        if (!e.target.closest('.add-to-cart-btn') && !e.target.closest('.qty-control-btn')) {
+            window.location.href = `producto-detalle.html?id=${product.id}`;
+        }
+    });
+    
     // Check if product is in cart
     const cartItem = cart.find(item => item.id === product.id);
     const inCart = cartItem ? cartItem.quantity : 0;
