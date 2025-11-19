@@ -280,13 +280,16 @@
                         }
                     },
                     customization: {
+                        paymentMethods: {
+                            types: {
+                                excluded: ['debit_card', 'ticket', 'atm']
+                            },
+                            maxInstallments: 12
+                        },
                         visual: {
                             style: {
                                 theme: 'default'
                             }
-                        },
-                        paymentMethods: {
-                            maxInstallments: 12
                         }
                     },
                     callbacks: {

@@ -760,6 +760,12 @@ function initializeSearch() {
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.querySelector('.search-btn');
     
+    // Validar que los elementos existen
+    if (!searchInput || !searchBtn) {
+        console.log('⚠️ initializeSearch: Elementos de búsqueda no encontrados');
+        return;
+    }
+    
     function performSearch() {
         const query = searchInput.value.toLowerCase().trim();
         if (!query) return;
