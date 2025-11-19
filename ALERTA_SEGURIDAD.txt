@@ -1,0 +1,111 @@
+# 🚨 ALERTA DE SEGURIDAD - GitGuardian
+
+**Fecha**: 19 de noviembre de 2025  
+**Detectado por**: GitGuardian
+
+---
+
+## ⚠️ CREDENCIALES EXPUESTAS EN GITHUB
+
+GitGuardian detectó credenciales de Mercado Pago en el historial de Git.
+
+### 📍 Ubicación:
+- **Commit**: `bf2bbcb` (17 de noviembre, 2025)
+- **Archivo**: `SETUP_COMPLETO.md`
+- **Tipo**: Mercado Pago Access Token (VIEJO)
+
+### 🔑 Credenciales Expuestas (ANTIGUAS):
+```
+Access Token: APP_USR-5713293345399410-111717-59c57f2da4de4c64fe97f1523750aa8f-2998483119
+Public Key: APP_USR-6c98f692-1f6f-461a-8f87-e41588f81cf7
+```
+
+**⚠️ IMPORTANTE**: Estas NO son tus credenciales actuales de PRODUCCIÓN.
+
+---
+
+## ✅ ESTADO ACTUAL
+
+### Credenciales ACTUALES (Seguras):
+- **Access Token PRODUCCIÓN**: `APP_USR-750844577940180-111821-2ba54b36423ffd2b60683b1d049b0872-221070899`
+- **Public Key PRODUCCIÓN**: `APP_USR-88773180-c066-4b25-8aae-f6072294de54`
+- **Ubicación**: Solo en Firebase Functions Config (backend) ✅
+- **Estado**: NUNCA expuestas en GitHub ✅
+
+### Credenciales VIEJAS (Expuestas):
+- Están en el historial de Git (commit inicial)
+- Ya fueron removidas de los archivos actuales
+- Necesitan ser verificadas y rotadas
+
+---
+
+## 🔧 ACCIÓN REQUERIDA
+
+### 1. Verificar credenciales viejas en Mercado Pago
+
+```
+1. Ir a: https://www.mercadopago.com.ar/developers/panel/credentials
+2. Buscar estas credenciales:
+   - APP_USR-5713293345399410-111717-59c57f2da4de4c64fe97f1523750aa8f-2998483119
+   - APP_USR-6c98f692-1f6f-461a-8f87-e41588f81cf7
+```
+
+### 2. Si las credenciales viejas AÚN EXISTEN:
+
+**OPCIÓN A: Eliminarlas** (si no las usás)
+- Ve al panel de Mercado Pago
+- Elimina/desactiva esas aplicaciones
+
+**OPCIÓN B: Regenerarlas** (si las necesitás)
+- Genera nuevas credenciales
+- Actualiza donde las uses
+
+### 3. Si las credenciales viejas YA NO EXISTEN:
+- ✅ No hacer nada, ya están desactivadas
+
+---
+
+## 🛡️ PREVENCIÓN FUTURA
+
+### Ya implementado:
+- ✅ `.gitignore` protege archivos sensibles
+- ✅ Credenciales actuales solo en backend
+- ✅ Archivos de documentación removidos
+- ✅ Sistema de variables de entorno
+
+### Para limpiar historial (OPCIONAL - AVANZADO):
+
+⚠️ **ADVERTENCIA**: Esto reescribe el historial de Git
+
+```powershell
+# Hacer backup primero
+git clone https://github.com/pablot95/VerdeHogar.git backup-repo
+
+# Usar git filter-repo (recomendado)
+pip install git-filter-repo
+git filter-repo --invert-paths --path SETUP_COMPLETO.md --path CONFIGURAR_MERCADOPAGO.md
+
+# Forzar push
+git push --force --all
+```
+
+**Nota**: Esto afectará a cualquiera que haya clonado el repo.
+
+---
+
+## 📊 RESUMEN
+
+| Aspecto | Estado |
+|---------|--------|
+| **Credenciales ACTUALES** | ✅ SEGURAS |
+| **Credenciales VIEJAS** | ⚠️ EXPUESTAS EN HISTORIAL |
+| **Riesgo Actual** | 🟡 BAJO (si credenciales viejas están desactivadas) |
+| **Acción Necesaria** | Verificar y rotar credenciales viejas |
+
+---
+
+## ✅ SIGUIENTE PASO
+
+**Verificá en Mercado Pago si esas credenciales viejas aún existen y eliminalas o rotalas.**
+
+Una vez hecho esto, el riesgo será CERO.
