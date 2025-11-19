@@ -87,13 +87,11 @@ exports.createPaymentPreference = functions.https.onCall(async (data, context) =
         console.log('Preference created successfully');
         console.log('- ID:', preference.id);
         console.log('- Init Point:', preference.init_point);
-        console.log('- Sandbox Init Point:', preference.sandbox_init_point);
         
-        // Retornar URLs
+        // Retornar solo initPoint (PRODUCCIÓN)
         return {
             preferenceId: preference.id,
-            initPoint: preference.init_point,
-            sandboxInitPoint: preference.sandbox_init_point
+            initPoint: preference.init_point
         };
         
     } catch (error) {

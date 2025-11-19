@@ -183,7 +183,7 @@
             if (zone && shippingCosts[zone]) {
                 currentShippingCost = shippingCosts[zone];
             } else {
-                currentShippingCost = 5000; // Default
+                currentShippingCost = 0; // Default
             }
             
             // Actualizar UI
@@ -329,10 +329,10 @@
                 
                 console.log('💳 Preferencia creada:', result.data);
                 console.log('   - preferenceId:', result.data.preferenceId);
-                console.log('   - sandboxInitPoint:', result.data.sandboxInitPoint);
+                console.log('   - initPoint:', result.data.initPoint);
                 
                 // Verificar que tenemos una URL de redirección
-                if (!result.data || (!result.data.sandboxInitPoint && !result.data.initPoint)) {
+                if (!result.data || !result.data.initPoint) {
                     throw new Error('No se recibió URL de pago de Mercado Pago');
                 }
                 
@@ -340,10 +340,9 @@
                 localStorage.removeItem('hogarverdeCart');
                 cart = [];
                 
-                // Redirigir a Mercado Pago
+                // Redirigir a Mercado Pago PRODUCCIÓN
                 console.log('🚀 Redirigiendo a Mercado Pago...');
-                const paymentUrl = result.data.sandboxInitPoint || result.data.initPoint;
-                window.location.href = paymentUrl;
+                window.location.href = result.data.initPoint;
                 
             } catch (error) {
                 console.error('❌ Error procesando orden:', error);
