@@ -806,6 +806,12 @@ function initializeProductsPage() {
     const productsPage = document.getElementById('productsPage');
     const productsGrid = document.getElementById('allProductsGrid');
     
+    // Validar que los elementos existen
+    if (!backToHome || !productsPage) {
+        console.log('⚠️ initializeProductsPage: Elementos no encontrados');
+        return;
+    }
+    
     backToHome.addEventListener('click', () => {
         productsPage.classList.remove('active');
         document.getElementById('cartModal').classList.remove('active');
