@@ -1565,6 +1565,9 @@ body:has(.products-page.active) .header {
         width: 24px;
         height: 24px;
     }
+    .category-title{
+        font-size: 3rem;
+    }
     
     .category-nav-container {
         grid-template-columns: 1fr;
