@@ -20,6 +20,30 @@ if (typeof Lenis !== 'undefined') {
     requestAnimationFrame(raf);
 }
 
+// Hide/Show header on scroll
+let lastScrollTop = 0;
+const header = document.querySelector('.header');
+const scrollThreshold = 100; // Mínimo scroll antes de ocultar
+
+window.addEventListener('scroll', () => {
+    const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Si estamos en la parte superior, siempre mostrar
+    if (currentScroll <= scrollThreshold) {
+        header.classList.remove('hidden');
+    }
+    // Si scrolleamos hacia abajo y pasamos el threshold, ocultar
+    else if (currentScroll > lastScrollTop && currentScroll > scrollThreshold) {
+        header.classList.add('hidden');
+    }
+    // Si scrolleamos hacia arriba, mostrar
+    else if (currentScroll < lastScrollTop) {
+        header.classList.remove('hidden');
+    }
+    
+    lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+}, false);
+
 // Global products array (will be loaded from Firebase)
 let productsData = {
     living: [],
